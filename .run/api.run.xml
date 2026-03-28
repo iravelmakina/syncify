@@ -1,0 +1,11 @@
+<component name="ProjectRunConfigurationManager">
+    <configuration default="false" name="[local] api" type="GoApplicationRunConfiguration" factoryName="Go Application" folderName="[local] build">
+        <module name="syncify" />
+        <working_directory value="$PROJECT_DIR$" />
+        <parameters value="serve --pretty-logs --log-level=debug" />
+        <kind value="PACKAGE" />
+        <package value="github.com/iravelmakina/syncify" />
+        <directory value="$PROJECT_DIR$" />
+        <method v="2" />
+    </configuration>
+</component>
