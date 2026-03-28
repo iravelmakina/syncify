@@ -1,0 +1,46 @@
+erDiagram
+    CALENDAR_ACCOUNTS {
+        uuid id PK
+        uuid user_id
+        varchar provider "google, outlook"
+        text refresh_token_enc "AES-256-GCM encrypted"
+        timestamp token_expires_at
+        varchar status "active, expired, revoked"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    CALENDARS {
+        uuid id PK
+        uuid account_id FK
+        varchar provider_calendar_id "provider-specific ID"
+        varchar name "display name"
+        varchar access "free_busy_only, read, read_write"
+    }
+
+    SYNC_RULES {
+        uuid id PK
+        uuid user_id
+        uuid source_calendar_id FK "references calendars.id"
+        uuid target_calendar_id FK "references calendars.id"
+        boolean copy_title "default false"
+        varchar custom_title "default Busy"
+        jsonb filter_policy "excludes, time_window, keywords"
+        varchar status "active, archived"
+        text last_sync_token "nullable, Google sync cursor"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    SYNCED_EVENTS {
+        uuid id PK
+        uuid sync_rule_id FK
+        varchar source_event_id "provider event ID"
+        varchar target_block_id "created block event ID"
+        timestamp source_updated_at
+    }
+
+    CALENDAR_ACCOUNTS ||--o{ CALENDARS : "contains"
+    CALENDARS ||--o{ SYNC_RULES : "source"
+    CALENDARS ||--o{ SYNC_RULES : "target"
+    SYNC_RULES ||--o{ SYNCED_EVENTS : "tracks"
