@@ -1,4 +1,4 @@
-## Aggregate Design and Domain Rules
+## Aggregate design and domain rules
 
 **Status:** Proposed
 
@@ -16,23 +16,11 @@ Practice 4 requires at least 3 domain rules per module, enforced inside the doma
 - Domain rules must be enforceable without database or external service access (pure domain logic)
 - Value objects must be immutable and self-validating on construction
 - Status transitions must be explicit — no arbitrary state jumps
-- Cross-module interaction (Sync calls Connections facade for `SourceCapability`, see ADR-002) must be reflected in the aggregate API
+- Cross-module interaction (Sync calls Connections facade for `CalendarAccess`, see ADR-002) must be reflected in the aggregate API
 
-## Connections module — CalendarConnection aggregate
+### [Entity Relationsip Diagram](../diagrams/entity-relationship.mmd)
 
-### Structure
-
-```mermaid
-flowchart TD
-    CC["CalendarConnection\n(aggregate root)"]
-    CC --> F1["ConnectionID — uuid"]
-    CC --> F2["UserID — shared VO"]
-    CC --> F3["Provider — enum: Google, Outlook"]
-    CC --> F4["OAuthCredential — VO\naccessToken, refreshToken, expiresAt"]
-    CC --> F5["Calendars — list of CalendarInfo VO\ncalendarID, name, SourceCapability"]
-    CC --> F6["Status — ConnectionStatus"]
-    CC --> F7["CreatedAt, UpdatedAt"]
-```
+## CalendarAccount aggregate
 
 ### Status machine
 
@@ -58,49 +46,29 @@ stateDiagram-v2
 
 ### Value objects
 
-- **OAuthCredential** — accessToken non-empty, expiresAt in the future at creation. Immutable; refresh produces a new instance.
-- **CalendarInfo** — calendarID non-empty, valid `SourceCapability` (see ADR-002). Immutable.
+- **OAuthCredential** — refreshToken non-empty, tokenExpiresAt tracks when the last access token expired (used by rule C1 to drive status). Only the refresh token is persisted (encrypted at rest, see ADR-003); access tokens are ephemeral and regenerated on demand by the infrastructure layer. Immutable; refresh produces a new instance.
+- **CalendarInfo** — providerCalendarID non-empty, valid `CalendarAccess` (see ADR-002). Immutable. Persisted in `calendars` table with its own uuid PK.
 - **Provider** — enum: `Google`, `Outlook` (future).
 
 ### Facade contract
 
 ```go
 type ConnectionService interface {
-    GetCapability(ctx, connectionID, calendarID) (SourceCapability, error)
-    ValidateConnection(ctx, connectionID) error
-    ListCalendars(ctx, connectionID) ([]CalendarInfo, error)
+    GetCalendarAccess(ctx, calendarID uuid) (CalendarAccess, error)
+    ListCalendars(ctx, accountID uuid) ([]CalendarInfo, error)
+    GetFreshAccessToken(ctx, calendarID uuid) (string, error)
 }
 ```
 
-## Sync module — SyncRule aggregate
-
-### Structure
-
-```mermaid
-flowchart TD
-    SR["SyncRule\n(aggregate root)"]
-    SR --> G1["SyncRuleID — uuid"]
-    SR --> G2["UserID — shared VO"]
-    SR --> G3["Source — CalendarRef VO\nconnectionID + calendarID"]
-    SR --> G4["Target — CalendarRef VO\nconnectionID + calendarID"]
-    SR --> G5["Filter — FilterPolicy VO\ntimeWindow, keywords,\nexcludeAllDay, excludeDeclined"]
-    SR --> G6["Visibility — VisibilityMode\nBusyOnly / Title / Full"]
-    SR --> G7["Status — RuleStatus"]
-    SR --> G8["CreatedAt, UpdatedAt"]
-```
+## SyncRule aggregate
 
 ### Status machine
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Draft : created
-    Draft --> Active : activate
-    Active --> Paused : pause
-    Paused --> Active : resume
-    Draft --> Archived : archive
+    [*] --> Active : created (validates CalendarAccess)
     Active --> Archived : archive
-    Paused --> Archived : archive
-    Archived --> [*] : terminal
+    Archived --> Active : resume (re-validates CalendarAccess)
 ```
 
 ### Domain rules
@@ -108,51 +76,31 @@ stateDiagram-v2
 | # | Rule | Enforced by |
 |---|------|-------------|
 | S1 | Source and target must reference different calendars | `NewSyncRule()` constructor |
-| S2 | `TimeSlotsOnly` capability → keywords must be empty | `Activate(cap)`, `UpdateFilter(filter, cap)` |
-| S3 | `TimeSlotsOnly` capability → visibility must be `BusyOnly` | `Activate(cap)`, `UpdateVisibility(vis, cap)` |
+| S2 | Source `FreeBusyOnly` → keywords must be empty | `NewSyncRule(srcAccess, tgtAccess)`, `Resume(srcAccess, tgtAccess)`, `UpdateFilter(filter, srcAccess)` |
+| S3 | Source `FreeBusyOnly` → `copyTitle` must be false (nothing to copy) | `NewSyncRule(srcAccess, tgtAccess)`, `Resume(srcAccess, tgtAccess)`, `UpdateTitle(copyTitle, customTitle, srcAccess)` |
 | S4 | TimeWindow: `startHour` < `endHour`, weekdays non-empty | `FilterPolicy` VO constructor |
-| S5 | Status transitions follow the state machine only | All transition methods |
-| S6 | Activation requires `SourceCapability` parameter — aggregate re-validates S2 + S3 | `Activate(cap)` |
-| S7 | Filter/visibility changes require `SourceCapability` parameter — re-validates S2 + S3 | `UpdateFilter(filter, cap)`, `UpdateVisibility(vis, cap)` |
+| S5 | Status transitions: `Active ↔ Archived` only | `Archive()`, `Resume(srcAccess, tgtAccess)` |
+| S6 | Creation requires `CalendarAccess` for both source and target — rule starts `Active` immediately | `NewSyncRule(srcAccess, tgtAccess)` |
+| S7 | Target must have `ReadWrite` access | `NewSyncRule(srcAccess, tgtAccess)`, `Resume(srcAccess, tgtAccess)` |
+| S8 | Resume re-validates access — connections may have changed while archived | `Resume(srcAccess, tgtAccess)` |
+| S9 | `customTitle` must be non-empty | `NewSyncRule()`, `UpdateTitle()` |
+| S10 | Filter/title changes require source `CalendarAccess` parameter | `UpdateFilter(filter, srcAccess)`, `UpdateTitle(copyTitle, customTitle, srcAccess)` |
+| S11 | Archiving clears `lastSyncToken` — next resume triggers full re-sync | `Archive()` |
 
 ### Value objects
 
-- **CalendarRef** — connectionID (uuid) + calendarID (string), both non-empty. Does *not* store `SourceCapability` — capability is fetched live from Connections facade to avoid staleness.
-- **FilterPolicy** — self-validates TimeWindow (rule S4), keyword count cap (e.g., 20). Cross-validation against capability is the aggregate's job, not the VO's.
-- **VisibilityMode** — enum: `BusyOnly`, `Title`, `Full`.
-- **TimeWindow** — startHour (0–23), endHour (0–23), weekdays (non-empty). Self-validates S4.
+- **FilterPolicy** — stored as JSONB. Contains `excludes` (string array: `"all_day"`, `"declined"`, extensible), `timeWindow` (optional: startHour, endHour, weekdays), `keywords` (optional string array). Self-validates TimeWindow (rule S4) and keyword count cap (e.g., 20). Cross-validation against `CalendarAccess` (rules S2, S3) is the aggregate's job. Adding a new filter type = new Go struct field + JSON key, zero migrations.
+- **TimeWindow** — startHour (0–23), endHour (0–23), weekdays (non-empty []int). Self-validates S4. Embedded within FilterPolicy.
 
-## Cross-module interaction
+### Persistence strategy (hybrid)
 
-`SyncRule` methods that validate against capability (`Activate`, `UpdateFilter`, `UpdateVisibility`) accept `SourceCapability` as a parameter. The application layer is responsible for obtaining it from the Connections facade before calling the aggregate:
-
-```mermaid
-sequenceDiagram
-    participant API
-    participant SyncApp as Sync use case
-    participant Rule as SyncRule aggregate
-    participant Conn as Connections facade
-
-    API->>SyncApp: ActivateSyncRule(ruleID)
-    SyncApp->>SyncApp: load rule from repo
-    SyncApp->>Conn: ValidateConnection(source.connID)
-    Conn-->>SyncApp: ok
-    SyncApp->>Conn: GetCapability(source.connID, source.calID)
-    Conn-->>SyncApp: SourceCapability
-    SyncApp->>Conn: ValidateConnection(target.connID)
-    Conn-->>SyncApp: ok
-    SyncApp->>Rule: Activate(capability)
-    Rule->>Rule: validate S2, S3, S5
-    Rule-->>SyncApp: ok or domain error
-    SyncApp->>SyncApp: persist
-    SyncApp-->>API: 200 or 422
-```
+Stable fields (`copy_title`, `custom_title`, `status`, `last_sync_token`) are stored as columns with DB-level constraints. The volatile filter configuration is stored as a single `filter_policy jsonb` column. Rationale: filter types will grow (new excludes, new dimensions), and each new filter should require only a Go struct change — not a migration. Title config is two stable fields with no expected growth, so columns give us DB constraints and schema visibility.
 
 ## Decision
 
 Both aggregates enforce invariants through constructor validation and guarded mutation methods. No public setters — all changes go through named methods that check preconditions. Value objects are immutable and self-validating. Status machines are explicit with no backdoors.
 
-`SourceCapability` is not persisted on `SyncRule` — the Connections module is always the source of truth. The aggregate receives it as a parameter during mutations that depend on it.
+`CalendarAccess` is not persisted on `SyncRule` — the Connections module is always the source of truth. The aggregate receives it as a parameter during mutations that depend on it.
 
 ### Expected Benefits
 
@@ -163,7 +111,7 @@ Both aggregates enforce invariants through constructor validation and guarded mu
 
 ### Accepted Downsides
 
-- Reading a `SyncRule` from the database doesn't reveal what capability it was validated against. Acceptable — capability is always checked live from Connections.
+- Reading a `SyncRule` from the database doesn't reveal what access level it was validated against. Acceptable — access is always checked live from Connections.
 - C5 (max connections per provider) lives in the application layer because it requires a repo query. Documented to avoid confusion about aggregate boundary.
 
 ---

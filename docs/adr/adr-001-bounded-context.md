@@ -22,18 +22,18 @@ CalendarSync automatically keeps a user's availability accurate across multiple 
 
 ### **Option A — Calendar Connections + Sync Rules**
 
-Split by what they integrate with. **Connections** owns OAuth tokens, provider credentials, connected accounts, and the calendar catalog with access roles. **Sync Rules** owns rule configuration — filters, visibility modes, status transitions — and references calendars via a lightweight `CalendarRef` (connectionID + calendarID).
+Split by what they integrate with. **Connections** owns OAuth tokens, provider credentials, connected accounts, and the calendar catalog with access roles. **Sync Rules** owns rule configuration — filters, title settings, status transitions — and references calendars via a `calendars.id` foreign key.
 
 **Pros:**
 - Clean security boundary — tokens and provider secrets never leak into business rule logic
 - Connections is the natural Practice 5 extraction target (external API deps, different scaling profile)
 - Practice 6 events are obvious: `ConnectionRevoked`, `AccessRoleChanged` → Sync re-validates affected rules
-- Practice 7 Saga: `ActivateSyncRule` → verify source accessible → verify target writable → activate
+- Practice 7 Saga: `CreateSyncRule` → verify source accessible → verify target writable → validate capability → create active rule; `ResumeSyncRule` follows the same multi-step validation
 - In Go, Google API client dependency stays isolated in one module
 
 **Cons:**
 - Connections domain layer is thinner than Sync Rules — mostly validation (token expiry, connection status) rather than rich business logic
-- `AccessRole` in Sync's `CalendarRef` originates from Connections; stale data requires event-based re-validation
+- Sync rules reference `calendars.id` from the Connections module. In the monolith this is a direct FK; after extraction (Practice 5) it becomes a UUID reference resolved via API. Stale data (e.g., access role downgraded) requires event-based re-validation.
 
 ### **Option B — Sync Rules + Sync Execution**
 
@@ -95,7 +95,7 @@ We decided for **Option A — Connections + Sync Rules** because it is the only 
 ### Accepted Downsides
 
 - Connections domain layer is thinner than Sync Rules. Mitigated by ensuring meaningful domain rules (token expiry, connection status machine, calendar access verification) rather than pure pass-through.
-- `AccessRole` staleness in Sync's `CalendarRef`. Mitigated by re-checking via facade at activation time (monolith); via `AccessRoleChanged` events (microservices).
+- `CalendarAccess` staleness: sync rules reference calendars by ID but don't cache the access level. Mitigated by fetching live from Connections facade at rule creation and resume time (monolith); via `AccessRoleChanged` events (microservices).
 
 ---
 

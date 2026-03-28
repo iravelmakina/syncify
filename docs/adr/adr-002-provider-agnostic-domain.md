@@ -8,13 +8,14 @@
 
 ## Problem Statement
 
-Calendar providers expose different permission models — Google uses `freeBusyReader`/`reader`/`writer`/`owner`, Microsoft Graph uses `Calendars.ReadBasic`/`Calendars.Read`. The Sync module's filter validation depends on what data is available from the source calendar. If provider-specific concepts leak into the domain, adding a new provider forces changes across both modules. We need a provider-agnostic way to express source calendar capabilities.
+Calendar providers expose different permission models — Google uses `freeBusyReader`/`reader`/`writer`/`owner`, Microsoft Graph uses `Calendars.ReadBasic`/`Calendars.Read`/`Calendars.ReadWrite`. The Sync module needs to validate filters (source side) and confirm write access (target side) without referencing provider-specific types. We need a single provider-agnostic abstraction that covers both read capabilities and write permissions.
 
 ## Decision Drivers
 
 - Domain layer must have zero dependencies on provider-specific types (Clean Architecture)
 - Adding a new provider should require only a new infrastructure adapter — no domain or application changes
-- The abstraction must be expressive enough for the Sync module to validate filters and visibility modes
+- The abstraction must express both read capability (for filter validation) and write permission (for target validation) in a unified model
+- Provider permission levels are strictly ascending — no provider grants write without read
 
 ## Considered Options
 
@@ -26,52 +27,71 @@ Use Google's `AccessRole` directly. Extend or add parallel enums per provider.
 
 **Cons:** Google concepts pollute domain. Adding Outlook forces domain changes. Filter validation needs provider-specific branches — combinatorial growth.
 
-### **Option B — Provider-agnostic capability enum**
+### **Option B — Two separate fields (read capability + writable boolean)**
 
-Define `SourceCapability` in the domain with two levels:
-- `TimeSlotsOnly` — only start/end times (Google `freeBusyReader`, Outlook `ReadBasic`)
-- `EventDetails` — titles, descriptions, attendees (Google `reader`+, Outlook `Read`)
+Separate read capability (`FreeBusyOnly`/`EventDetails`) from write permission (boolean flag).
 
-Each provider adapter maps its API-specific permission to `SourceCapability`.
+**Pros:** Each field has clear single responsibility.
 
-**Pros:** Domain is provider-agnostic. Single validation code path. Adding Outlook = one adapter, zero domain changes.
+**Cons:** Two fields model what is actually one ascending axis — no provider grants write without full read. Redundant state space (`FreeBusyOnly` + `writable: true` is an impossible combination that the domain must reject). Two facade calls instead of one.
 
-**Cons:** May not capture future edge cases (e.g., titles-only without descriptions). Translation is a judgment call in the adapter.
+### **Option C — Unified CalendarAccess enum (3 levels)**
 
-### **Option C — Fine-grained capability flags**
+A single enum representing the ascending permission levels that exist across all providers:
 
-A `SourceCapabilities` VO with booleans: `CanReadTitles`, `CanReadDescriptions`, `CanReadAttendees`, etc.
+- `FreeBusyOnly` — time blocks only, no event details, no write
+- `Read` — full event details, no write
+- `ReadWrite` — full event details, can create/modify/delete events
+
+Each provider adapter maps its API-specific permissions to one of these three levels.
+
+**Pros:** One field, one call, one validation path. Impossible states are unrepresentable. Maps cleanly to both Google and Outlook. Ascending order means comparisons are natural (`access >= Read` for keyword filters).
+
+**Cons:** If a future provider has a level between `FreeBusyOnly` and `Read` (e.g., titles but not descriptions), the enum must be extended.
+
+### **Option D — Fine-grained capability flags**
+
+A VO with booleans: `CanReadTitles`, `CanReadDescriptions`, `CanWrite`, etc.
 
 **Pros:** Maximum flexibility for any permission combination.
 
-**Cons:** Overengineered — only two meaningful levels exist today. Scattered flag checks instead of a clean switch. YAGNI.
+**Cons:** Overengineered — only three meaningful levels exist today. Scattered flag checks instead of a clean switch. YAGNI.
 
 ## Decision
 
-We decided for **Option B — Provider-agnostic capability enum** because two levels cover Google and Outlook, and extending the enum later is a single-point change far cheaper than provider-specific branching.
+We decided for **Option C — Unified `CalendarAccess` enum** because provider permissions are a single ascending axis, and three levels cover Google and Outlook without redundant state.
 
 ### Adapter mapping
 
 ```mermaid
 flowchart LR
     subgraph "Infrastructure adapters"
-        GA["Google adapter"] -->|"freeBusyReader → TimeSlotsOnly\nreader/writer/owner → EventDetails"| SC["SourceCapability"]
-        OA["Outlook adapter\n(future)"] -->|"ReadBasic → TimeSlotsOnly\nRead → EventDetails"| SC
+        GA["Google adapter"] -->|"freeBusyReader → FreeBusyOnly\nreader → Read\nwriter/owner → ReadWrite"| CA["CalendarAccess"]
+        OA["Outlook adapter\n(future)"] -->|"ReadBasic → FreeBusyOnly\nRead → Read\nReadWrite → ReadWrite"| CA
     end
     subgraph "Domain"
-        SC --> SR["Used by SyncRule\nfor filter validation"]
+        CA --> SR["Used by SyncRule for\nfilter + target validation"]
     end
 ```
 
+### How domain rules use CalendarAccess
+
+| Rule | Condition |
+|---|---|
+| Keyword filters allowed | source access >= `Read` |
+| Copy title from source allowed | source access >= `Read` |
+| Target can receive blocked events | target access = `ReadWrite` |
+
 ### Expected Benefits
 
-- Single filter validation path regardless of provider count
-- Outlet adapter requires zero domain changes
-- Self-documenting — developers understand the constraint without knowing any provider's API
+- Single enum, single facade call, single validation path
+- Impossible states unrepresentable (no "writable but can't read details")
+- Outlook adapter requires zero domain changes
+- Ascending order enables clean comparisons in domain rules
 
 ### Accepted Downsides
 
-- If a future provider has a permission level between the two (e.g., titles but not descriptions), the enum must be extended. Acceptable — one-point change.
+- If a future provider has a permission level between `FreeBusyOnly` and `Read` (e.g., titles but not descriptions), the enum must be extended. Acceptable — one-point change.
 - Adapter authors make a judgment call when mapping. Mitigated by documenting the mapping in each adapter.
 
 ---
