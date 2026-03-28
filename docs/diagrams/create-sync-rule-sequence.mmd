@@ -1,0 +1,37 @@
+sequenceDiagram
+    actor User
+    participant API
+    participant SyncApp as Sync
+    participant ConnFacade as Connections facade
+    participant DB
+
+    User->>API: POST /sync-rules
+    API->>SyncApp: CreateSyncRule(cmd)
+    SyncApp->>ConnFacade: GetCalendarAccess(sourceCalID)
+    ConnFacade-->>SyncApp: Read
+    SyncApp->>ConnFacade: GetCalendarAccess(targetCalID)
+    ConnFacade-->>SyncApp: ReadWrite
+    SyncApp->>SyncApp: NewSyncRule(validate S1-S4, S7, S9)
+    SyncApp->>DB: save rule (status=active)
+    SyncApp-->>User: 201 {rule_id, status: active}
+
+    Note over User, DB: Archive
+
+    User->>API: PATCH /sync-rules/{id}/status {archived}
+    API->>SyncApp: Archive(ruleID)
+    SyncApp->>DB: load rule
+    SyncApp->>SyncApp: Archive() — clear syncToken
+    SyncApp->>DB: persist
+    SyncApp-->>User: 200 {status: archived}
+
+    Note over User, DB: Resume
+
+    User->>API: PATCH /sync-rules/{id}/status {active}
+    API->>SyncApp: Resume(ruleID)
+    SyncApp->>ConnFacade: GetCalendarAccess(sourceCalID)
+    ConnFacade-->>SyncApp: Read
+    SyncApp->>ConnFacade: GetCalendarAccess(targetCalID)
+    ConnFacade-->>SyncApp: ReadWrite
+    SyncApp->>SyncApp: Resume(validate S2-S3, S7-S8)
+    SyncApp->>DB: persist
+    SyncApp-->>User: 200 {status: active}

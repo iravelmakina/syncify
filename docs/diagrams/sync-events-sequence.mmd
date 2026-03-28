@@ -1,0 +1,47 @@
+sequenceDiagram
+    participant Poller as Poller / manual trigger
+    participant SyncApp as Sync
+    participant ConnFacade as Connections facade
+    participant Google as Google API
+    participant DB
+
+    Poller->>SyncApp: ExecuteSync(ruleID)
+    SyncApp->>DB: load rule (must be active)
+    SyncApp->>ConnFacade: GetFreshAccessToken(source)
+    ConnFacade-->>SyncApp: access_token
+
+    alt has syncToken
+        SyncApp->>Google: events.list(sourceCal, syncToken)
+        Google-->>SyncApp: changed events + new token
+    else no syncToken
+        SyncApp->>Google: events.list(sourceCal)
+        Google-->>SyncApp: all events + token
+    end
+
+    alt 410 Gone
+        SyncApp->>DB: clear token + mappings
+        SyncApp->>Google: events.list(sourceCal, full)
+        Google-->>SyncApp: all events + new token
+    end
+
+    SyncApp->>SyncApp: apply FilterPolicy
+
+    SyncApp->>ConnFacade: GetFreshAccessToken(target)
+    ConnFacade-->>SyncApp: access_token
+
+    loop each changed event
+        alt new event
+            SyncApp->>Google: events.insert(targetCal, block)
+            Google-->>SyncApp: blockID
+            SyncApp->>DB: save mapping
+        else updated event
+            SyncApp->>Google: events.patch(targetCal, blockID)
+            SyncApp->>DB: update mapping
+        else cancelled event
+            SyncApp->>Google: events.delete(targetCal, blockID)
+            SyncApp->>DB: remove mapping
+        end
+    end
+
+    SyncApp->>DB: update lastSyncToken
+    SyncApp-->>Poller: done
