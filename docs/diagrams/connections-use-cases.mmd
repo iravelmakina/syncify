@@ -1,0 +1,20 @@
+flowchart LR
+    User["🧑 User"]
+    Google["🌐 Google\nCalendar API"]
+
+    subgraph CM["Connections module"]
+        C1(["Connect\ncalendar account"])
+        C2(["List\nconnections"])
+        C3(["List\ncalendars"])
+        C4(["Revoke\nconnection"])
+        C5(["Refresh\ncredentials"])
+    end
+
+    User --- C1
+    User --- C2
+    User --- C3
+    User --- C4
+
+    C1 -.->|"≪include≫"| C5
+    C1 --- Google
+    C5 --- Google

@@ -1,4 +1,4 @@
-## Authentication Strategy and Calendar OAuth Connectivity
+## Authentication Strategy and Calendar OAuth
 
 **Status:** Proposed
 
@@ -68,6 +68,10 @@ Since the Connections module already handles OAuth with Google, extend it to als
 
 We decided for **Option B — Shared UserID, no user entity** because neither module has domain logic that depends on user attributes. Authentication is a cross-cutting infrastructure concern that belongs in the API/gateway layer, not in the domain.
 
+
+For practice 4, we use Google's "installed application" OAuth flow. The Google Cloud project is only needed to register OAuth client credentials (client ID + secret).
+
+
 ### Authentication evolution path
 
 ```mermaid
@@ -84,36 +88,11 @@ flowchart LR
     end
 ```
 
-### Calendar OAuth flow (Practice 4, no UI)
+### Credential storage strategy
 
-```mermaid
-sequenceDiagram
-    actor Dev as Developer
-    participant API
-    participant ConnApp as Connections application
-    participant Google as Google OAuth
+Only the `refresh_token` is persisted — encrypted at rest using AES-256-GCM with a key from the `ENCRYPTION_KEY` environment variable. The `access_token` is short-lived (~1 hour) and regenerated on demand from the refresh token when the infrastructure layer needs to call the Google API. This minimizes the attack surface: a database leak exposes encrypted refresh tokens, not usable access tokens.
 
-    Dev->>API: POST /connections/google/auth-url
-    API->>ConnApp: GenerateAuthURL()
-    ConnApp-->>API: consent URL
-    API-->>Dev: {"url": "https://accounts.google.com/..."}
-
-    Dev->>Dev: open URL in browser, consent
-    Dev->>API: POST /connections/google/callback {"code": "..."}
-    API->>ConnApp: CompleteOAuth(userID, authCode)
-    ConnApp->>Google: exchange code for tokens
-    Google-->>ConnApp: access_token + refresh_token
-    ConnApp->>Google: list calendars
-    Google-->>ConnApp: calendar list with access roles
-    ConnApp->>ConnApp: map access roles → SourceCapability
-    ConnApp->>ConnApp: create CalendarConnection aggregate
-    ConnApp-->>API: ConnectionID
-    API-->>Dev: 201 Created
-```
-
-This is Google's "installed application" OAuth flow — the developer manually opens the consent URL, pastes the code back. No browser redirect callback needed. The Go binary doesn't need to serve a callback endpoint for the redirect; the code is submitted via a regular POST.
-
-**GCP vs deployment infrastructure:** The Google Cloud project is only needed to register OAuth client credentials (client ID + secret). It's a free registration step. The actual CalendarSync binary, database, and Docker containers run on any infrastructure — AWS, local machine, university lab. The Go code makes outbound HTTPS calls to `googleapis.com` like any external REST API.
+Encryption/decryption is a repository concern in `connections/infrastructure/`, not a domain concern. The `OAuthCredential` value object in the domain holds the decrypted refresh token in memory — it never sees ciphertext.
 
 ### Expected Benefits
 

@@ -1,0 +1,32 @@
+flowchart LR
+    User["🧑 User"]
+    Poller["⏱ Poller"]
+    Conn["📋 Connections\nfacade"]
+    Google["🌐 Google\nCalendar API"]
+
+    subgraph SM["Sync module"]
+        S1(["Create\nsync rule"])
+        S2(["List\nsync rules"])
+        S3(["Archive\nsync rule"])
+        S4(["Resume\nsync rule"])
+        S5(["Update filter\nor title"])
+        S6(["Execute\nsync"])
+        S7(["Trigger\nmanual sync"])
+        VA(["Validate\nCalendarAccess"])
+    end
+
+    User --- S1
+    User --- S2
+    User --- S3
+    User --- S4
+    User --- S5
+    User --- S7
+    Poller --- S6
+
+    S1 -.->|"≪include≫"| VA
+    S4 -.->|"≪include≫"| VA
+    S5 -.->|"≪include≫"| VA
+    S7 -.->|"≪include≫"| S6
+
+    VA --- Conn
+    S6 --- Google
