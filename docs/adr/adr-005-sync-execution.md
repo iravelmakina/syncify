@@ -32,7 +32,7 @@ Register a webhook via `events.watch()`. Google sends a POST to our callback URL
 **Cons:**
 - Requires a publicly reachable HTTPS endpoint — not available behind NAT, university networks, or local Docker
 - Webhook channels expire after 7 days and need renewal machinery
-- Google sends a notification *that* something changed, not *what* changed — still need `events.list` with syncToken to get the delta
+- Google sends a notification *that* something changed, not *what* changed — still need `events.list` with syncCursor to get the delta
 - Practice 4 scope doesn't justify the infrastructure complexity (TLS certs, webhook verification, channel renewal)
 
 ### **Option B — Polling on interval**
@@ -82,15 +82,18 @@ flowchart LR
     M --> E
 ```
 
-### Change detection: Google syncToken
+### Change detection: CalendarSyncer Port
 
-Instead of fetching all events on every poll, we use Google Calendar API's incremental sync:
+Each provider has a different mechanism for detecting changes (Google uses syncToken, Outlook uses deltaLink, Apple uses ctag + etag diffing). The sync execution use case must not know which mechanism is in use.
+
+The cursor is an opaque string stored on `SyncRule.syncCursor`. Each provider adapter interprets it:
+- **Google adapter:** passes it as syncToken to events.list(), receives new token in response
+- **Outlook adapter:** passes it as deltaLink to the delta endpoint
+- **Apple adapter:** uses it as ctag, does etag diffing internally, returns the new ctag
 
 1. First sync (no token): `events.list(calendarId, timeMin=now-30d)` — returns all events + a `syncToken`
 2. Subsequent syncs: `events.list(calendarId, syncToken=X)` — returns only events changed since last call + a new `syncToken`
 3. Token expired: Google returns `410 Gone` — clear token and mappings, do a full re-sync
-
-The `syncToken` is stored on `SyncRule.lastSyncToken`. It's an opaque cursor, not a credential — safe to store in plain text.
 
 ### Event mapping: synced_events table
 
@@ -122,9 +125,9 @@ We considered storing the source event ID in the target block's `extendedPropert
 
 ### Archiving behavior
 
-When a rule is archived (S11), `lastSyncToken` is cleared. The `synced_events` mappings are preserved. On resume, a full re-sync runs (no token), but existing mappings prevent duplicate block creation — the execution sees "mapping exists, event unchanged → skip" rather than "no mapping → insert duplicate."
+When a rule is archived (S11), `syncCursor` is cleared. The `synced_events` mappings are preserved. On resume, a full re-sync runs (no token), but existing mappings prevent duplicate block creation — the execution sees "mapping exists, event unchanged → skip" rather than "no mapping → insert duplicate."
 
-When Google returns `410 Gone`, both `lastSyncToken` and all `synced_events` for that rule are cleared. This is a hard reset — the source state is too stale to trust any mapping.
+When Google returns `410 Gone`, both `syncCursor` and all `synced_events` for that rule are cleared. This is a hard reset — the source state is too stale to trust any mapping.
 
 ### Evolution path
 
@@ -140,7 +143,8 @@ The `ExecuteSync(ruleID)` function signature stays the same across all practices
 ### Expected Benefits
 
 - One code path for both automatic and manual sync — easy to test and debug
-- Incremental sync via `syncToken` minimizes API calls (typically 1 call per rule per cycle instead of fetching all events)
+- Incremental sync via provider-specific cursors minimizes API calls (typically 1 call per rule per cycle)
+- CalendarSyncer port means adding a provider is one adapter file — no use case or domain changes
 - Mapping table enables O(1) lookup for create/update/delete decisions — no extra API calls
 - Works in any network environment — no public endpoint required
 - Clean migration path to async execution in Practice 6

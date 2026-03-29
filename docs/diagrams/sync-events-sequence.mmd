@@ -1,47 +1,41 @@
 sequenceDiagram
     participant Poller as Poller / manual trigger
-    participant SyncApp as Sync
-    participant ConnFacade as Connections facade
-    participant Google as Google API
-    participant DB
+    participant SyncApp as Sync use case
+    participant Syncer as CalendarSyncer port
+    participant DB as Repository
 
     Poller->>SyncApp: ExecuteSync(ruleID)
-    SyncApp->>DB: load rule (must be active)
-    SyncApp->>ConnFacade: GetFreshAccessToken(source)
-    ConnFacade-->>SyncApp: access_token
+    SyncApp->>DB: load rule (must be Active)
 
-    alt has syncToken
-        SyncApp->>Google: events.list(sourceCal, syncToken)
-        Google-->>SyncApp: changed events + new token
-    else no syncToken
-        SyncApp->>Google: events.list(sourceCal)
-        Google-->>SyncApp: all events + token
+    alt has syncCursor
+        SyncApp->>Syncer: FetchChanges(sourceCalID, cursor)
+        Syncer-->>SyncApp: ChangeSet + newCursor
+    else no syncCursor (first run / after resume)
+        SyncApp->>Syncer: FetchChanges(sourceCalID, "")
+        Syncer-->>SyncApp: all events + newCursor
     end
 
-    alt 410 Gone
-        SyncApp->>DB: clear token + mappings
-        SyncApp->>Google: events.list(sourceCal, full)
-        Google-->>SyncApp: all events + new token
+    alt ErrCursorExpired
+        SyncApp->>DB: clear cursor + all mappings
+        SyncApp->>Syncer: FetchChanges(sourceCalID, "")
+        Syncer-->>SyncApp: all events + newCursor
     end
 
-    SyncApp->>SyncApp: apply FilterPolicy
-
-    SyncApp->>ConnFacade: GetFreshAccessToken(target)
-    ConnFacade-->>SyncApp: access_token
+    SyncApp->>SyncApp: apply FilterPolicy + build blocks
 
     loop each changed event
-        alt new event
-            SyncApp->>Google: events.insert(targetCal, block)
-            Google-->>SyncApp: blockID
+        alt new (no mapping)
+            SyncApp->>Syncer: CreateBlock(targetCalID, block)
+            Syncer-->>SyncApp: blockID
             SyncApp->>DB: save mapping
-        else updated event
-            SyncApp->>Google: events.patch(targetCal, blockID)
+        else updated (mapping exists)
+            SyncApp->>Syncer: UpdateBlock(targetCalID, blockID, block)
             SyncApp->>DB: update mapping
-        else cancelled event
-            SyncApp->>Google: events.delete(targetCal, blockID)
+        else cancelled (mapping exists)
+            SyncApp->>Syncer: DeleteBlock(targetCalID, blockID)
             SyncApp->>DB: remove mapping
         end
     end
 
-    SyncApp->>DB: update lastSyncToken
+    SyncApp->>DB: update rule.syncCursor
     SyncApp-->>Poller: done

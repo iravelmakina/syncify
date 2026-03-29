@@ -27,7 +27,7 @@ erDiagram
         varchar custom_title "default Busy"
         jsonb filter_policy "excludes, time_window, keywords"
         varchar status "active, archived"
-        text last_sync_token "nullable, Google sync cursor"
+        text syncCursor "nullable, provider-agnostic"
         timestamp created_at
         timestamp updated_at
     }
