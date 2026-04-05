@@ -2,7 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Syncify.Sync.Application.Ports;
+using Syncify.Sync.Infrastructure.Google;
 using Syncify.Sync.Infrastructure.Persistence;
+using Syncify.Sync.Infrastructure.Polling;
 
 namespace Syncify.Sync.Infrastructure;
 
@@ -12,13 +14,17 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        services.Configure<GoogleSyncOptions>(configuration.GetSection(GoogleSyncOptions.SectionName));
+        services.Configure<SyncPollerOptions>(configuration.GetSection(SyncPollerOptions.SectionName));
+
         services.AddDbContext<SyncDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
 
         services.AddScoped<ISyncRuleRepository, SyncRuleRepository>();
         services.AddScoped<ISyncedEventRepository, SyncedEventRepository>();
 
-        // GoogleCalendarSyncer and SyncPoller will be added here later
+        services.AddHttpClient<ICalendarSyncer, GoogleCalendarSyncer>();
+        services.AddHostedService<SyncPoller>();
 
         return services;
     }
