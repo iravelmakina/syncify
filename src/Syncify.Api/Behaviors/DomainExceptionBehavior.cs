@@ -21,7 +21,12 @@ public sealed class DomainExceptionBehavior<TRequest, TResponse>
             if (typeof(TResponse).IsGenericType
                 && typeof(TResponse).GetGenericTypeDefinition() == typeof(Result<>))
             {
-                var error = new ApplicationError.Validation([ex.Message]);
+                ApplicationError error = ex.Code switch
+                {
+                    DomainErrorCode.InvalidState => new ApplicationError.Conflict(ex.Message),
+                    DomainErrorCode.AccessViolation => new ApplicationError.Forbidden(ex.Message),
+                    _ => new ApplicationError.Validation([ex.Message])
+                };
                 var failureMethod = typeof(TResponse).GetMethod(nameof(Result<object>.Failure))!;
                 return (TResponse)failureMethod.Invoke(null, [error])!;
             }

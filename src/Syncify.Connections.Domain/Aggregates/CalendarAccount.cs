@@ -50,7 +50,7 @@ public sealed class CalendarAccount
     public void Revoke(DateTime utcNow)
     {
         if (Status == ConnectionStatus.Revoked)
-            throw new DomainException("Account is already revoked.");
+            throw new DomainException("Account is already revoked.", DomainErrorCode.InvalidState);
 
         Status = ConnectionStatus.Revoked;
         UpdatedAt = utcNow;
@@ -59,7 +59,7 @@ public sealed class CalendarAccount
     public void RefreshCredential(OAuthCredential newCredential, DateTime utcNow)
     {
         if (Status == ConnectionStatus.Revoked)
-            throw new DomainException("Cannot refresh credential on a revoked account.");
+            throw new DomainException("Cannot refresh credential on a revoked account.", DomainErrorCode.InvalidState);
 
         Credential = newCredential;
         Status = ConnectionStatus.Active;
@@ -71,7 +71,7 @@ public sealed class CalendarAccount
         CheckExpiry(utcNow);
 
         if (Status != ConnectionStatus.Active)
-            throw new DomainException("Cannot refresh calendars unless account is active.");
+            throw new DomainException("Cannot refresh calendars unless account is active.", DomainErrorCode.InvalidState);
 
         _calendars = calendars.ToList();
         UpdatedAt = utcNow;

@@ -17,7 +17,8 @@ public sealed record FilterPolicy
         {
             if (srcAccess < criterion.MinimumAccess)
                 throw new DomainException(
-                    $"Filter criterion {criterion.GetType().Name} requires at least {criterion.MinimumAccess} access.");
+                    $"Filter criterion {criterion.GetType().Name} requires at least {criterion.MinimumAccess} access.",
+                    DomainErrorCode.AccessViolation);
         }
     }
 

@@ -42,7 +42,7 @@ public sealed class SyncRule
             throw new DomainException("Custom title must not be empty.");
 
         if (tgtAccess != CalendarAccess.ReadWrite)
-            throw new DomainException("Target calendar must have ReadWrite access.");
+            throw new DomainException("Target calendar must have ReadWrite access.", DomainErrorCode.AccessViolation);
 
         ValidateSourceAccessRestrictions(srcAccess, copyTitle, filterPolicy);
 
@@ -94,7 +94,7 @@ public sealed class SyncRule
     public void Archive(DateTime utcNow)
     {
         if (Status != SyncRuleStatus.Active)
-            throw new DomainException("Only active rules can be archived.");
+            throw new DomainException("Only active rules can be archived.", DomainErrorCode.InvalidState);
 
         Status = SyncRuleStatus.Archived;
         SyncCursor = null;
@@ -104,10 +104,10 @@ public sealed class SyncRule
     public void Resume(CalendarAccess srcAccess, CalendarAccess tgtAccess, DateTime utcNow)
     {
         if (Status != SyncRuleStatus.Archived)
-            throw new DomainException("Only archived rules can be resumed.");
+            throw new DomainException("Only archived rules can be resumed.", DomainErrorCode.InvalidState);
 
         if (tgtAccess != CalendarAccess.ReadWrite)
-            throw new DomainException("Target calendar must have ReadWrite access.");
+            throw new DomainException("Target calendar must have ReadWrite access.", DomainErrorCode.AccessViolation);
 
         ValidateSourceAccessRestrictions(srcAccess, CopyTitle, FilterPolicy);
 
@@ -147,6 +147,6 @@ public sealed class SyncRule
         filterPolicy.ValidateAccess(srcAccess);
 
         if (copyTitle && srcAccess < CalendarAccess.Read)
-            throw new DomainException("Cannot copy title when source has less than Read access.");
+            throw new DomainException("Cannot copy title when source has less than Read access.", DomainErrorCode.AccessViolation);
     }
 }

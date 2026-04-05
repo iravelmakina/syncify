@@ -35,7 +35,7 @@ public class SyncRuleTests
                 CalendarAccess.Read, CalendarAccess.ReadWrite,
                 false, "Busy", EmptyFilter, Now));
 
-        Assert.Contains("different calendars", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(DomainErrorCode.Validation, ex.Code);
     }
 
     [Fact]
@@ -46,7 +46,7 @@ public class SyncRuleTests
         var ex = Assert.Throws<DomainException>(() =>
             CreateValidRule(srcAccess: CalendarAccess.FreeBusyOnly, filter: filter));
 
-        Assert.Contains("KeywordsCriterion", ex.Message);
+        Assert.Equal(DomainErrorCode.AccessViolation, ex.Code);
     }
 
     [Fact]
@@ -55,7 +55,7 @@ public class SyncRuleTests
         var ex = Assert.Throws<DomainException>(() =>
             CreateValidRule(srcAccess: CalendarAccess.FreeBusyOnly, copyTitle: true));
 
-        Assert.Contains("copy title", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(DomainErrorCode.AccessViolation, ex.Code);
     }
 
     [Fact]
@@ -64,7 +64,7 @@ public class SyncRuleTests
         var ex = Assert.Throws<DomainException>(() =>
             new TimeWindowCriterion(14, 9, [DayOfWeek.Monday]));
 
-        Assert.Contains("Start hour must be less than end hour", ex.Message);
+        Assert.Equal(DomainErrorCode.Validation, ex.Code);
     }
 
     [Fact]
@@ -73,7 +73,7 @@ public class SyncRuleTests
         var ex = Assert.Throws<DomainException>(() =>
             CreateValidRule(tgtAccess: CalendarAccess.Read));
 
-        Assert.Contains("ReadWrite", ex.Message);
+        Assert.Equal(DomainErrorCode.AccessViolation, ex.Code);
     }
 
     [Fact]
