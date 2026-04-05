@@ -1,6 +1,6 @@
 # Syncify
 
-Automatically keeps a user's availability accurate across multiple calendar platforms by detecting events and blocking time on target calendars. For example, a student with a university lecture schedule and a work calendar no longer needs to manually copy lectures as busy blocks — CalendarSync handles it based on configurable rules.
+Automatically keeps a user's availability accurate across multiple calendar platforms by detecting events and blocking time on target calendars. For example, a student with a university lecture schedule and a work calendar no longer needs to manually copy lectures as busy blocks — Syncify handles it based on configurable rules.
 
 ## Theme
 
@@ -13,7 +13,7 @@ Automatically keeps a user's availability accurate across multiple calendar plat
 
 ## Domain rules
 
-### Connections module (`CalendarConnection` aggregate)
+### Connections module (`CalendarAccount` aggregate)
 
 | # | Rule |
 |---|------|
@@ -27,17 +27,17 @@ Status transitions: `Active ⇄ Expired`, `Active/Expired → Revoked` (terminal
 
 ### Sync module (`SyncRule` aggregate)
 
-| # | Rule |
-|---|------|
+| #  | Rule |
+|----|------|
 | S1 | Source and target must reference different calendars |
-| S2 | `TimeSlotsOnly` source capability → keyword filters forbidden |
-| S3 | `TimeSlotsOnly` source capability → visibility must be `BusyOnly` |
+| S2 | `FreeBusyOnly` source access → keyword filters forbidden |
+| S3 | `FreeBusyOnly` source access → `copyTitle` must be false |
 | S4 | TimeWindow: `startHour < endHour`, weekdays non-empty when set |
-| S5 | Status transitions follow the state machine only |
-| S6 | Activation requires live `SourceCapability` check via Connections facade |
-| S7 | Filter/visibility updates re-validate against current `SourceCapability` |
+| S5 | Creation requires `CalendarAccess` for both source and target — rule starts `Active` |
+| S6 | Target must have `ReadWrite` access |
+| S7 | Archiving clears `syncCursor` — next resume triggers full re-sync |
 
-Status transitions: `Draft → Active ⇄ Paused`, any `→ Archived` (terminal)
+Status transitions: `Active ⇄ Archived` (terminal: none — archiving is reversible via resume)
 
 ## Initial Architecture
 
@@ -51,7 +51,7 @@ We intentionally start with a modular monolith rather than microservices because
 
 ## Prerequisites
 
-- Go 1.23+
+- .NET 9.0 SDK
 - Docker & Docker Compose
 - A Google Cloud project with Calendar API enabled and OAuth 2.0 credentials (installed application type)
 
@@ -64,8 +64,8 @@ TBA
 ## Tests
 TBA
 
-# API Examples
+## API Examples
 TBA
 
-# Team workflow
+## Team workflow
 TBA
