@@ -1,4 +1,3 @@
-using Syncify.Connections.Domain.Enums;
 using Syncify.Shared;
 
 namespace Syncify.Connections.Domain.ValueObjects;

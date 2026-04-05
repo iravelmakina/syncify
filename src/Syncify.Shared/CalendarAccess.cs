@@ -1,4 +1,4 @@
-namespace Syncify.Connections.Domain.Enums;
+namespace Syncify.Shared;
 
 public enum CalendarAccess
 {
