@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Web;
 using Microsoft.Extensions.Options;
 using Syncify.Connections.Application.DTOs;
 using Syncify.Connections.Application.Ports;
@@ -19,20 +20,18 @@ public sealed class GoogleOAuthProvider : IOAuthProvider
 
     public string GenerateAuthUrl()
     {
-        var queryParams = new Dictionary<string, string>
-        {
-            ["client_id"] = _options.ClientId,
-            ["redirect_uri"] = _options.RedirectUri,
-            ["response_type"] = "code",
-            ["scope"] = _options.CalendarScope,
-            ["access_type"] = "offline",
-            ["prompt"] = "consent"
-        };
+        var builder = new UriBuilder(_options.AuthEndpoint);
+        var query = HttpUtility.ParseQueryString(string.Empty);
 
-        var query = string.Join("&", queryParams.Select(
-            kvp => $"{Uri.EscapeDataString(kvp.Key)}={Uri.EscapeDataString(kvp.Value)}"));
+        query["client_id"] = _options.ClientId;
+        query["redirect_uri"] = _options.RedirectUri;
+        query["response_type"] = "code";
+        query["scope"] = _options.CalendarScope;
+        query["access_type"] = "offline";
+        query["prompt"] = "consent";
 
-        return $"{_options.AuthEndpoint}?{query}";
+        builder.Query = query.ToString();
+        return builder.Uri.ToString();
     }
 
     public async Task<OAuthResult> ExchangeCodeAsync(string code, CancellationToken ct = default)
