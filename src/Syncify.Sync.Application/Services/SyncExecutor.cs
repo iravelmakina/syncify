@@ -28,8 +28,11 @@ public sealed class SyncExecutor(
         var result = await calendarSyncer.FetchChangesAsync(
             rule.SourceCalendarId, sourceToken, rule.SyncCursor, ct);
 
-        foreach (var change in result.Changes)
-            await ProcessChangeAsync(rule, targetToken, change, ct);
+        foreach (var eventId in result.DeletedEventIds)
+            await ProcessDeletionAsync(rule, targetToken, eventId, ct);
+
+        foreach (var ev in result.ChangedEvents)
+            await ProcessChangedEventAsync(rule, targetToken, ev, ct);
 
         rule.UpdateSyncCursor(result.NewCursor, DateTime.UtcNow);
         await ruleRepository.UpdateAsync(rule, ct);
@@ -37,43 +40,41 @@ public sealed class SyncExecutor(
         return Result<Unit>.Success(Unit.Value);
     }
 
-    private async Task ProcessChangeAsync(
-        SyncRule rule, string targetToken, CalendarChange change, CancellationToken ct)
+    private async Task ProcessDeletionAsync(
+        SyncRule rule, string targetToken, string sourceEventId, CancellationToken ct)
     {
-        var mapping = await syncedEventRepository.GetByRuleAndSourceEventAsync(rule.Id, change.EventId, ct);
+        var mapping = await syncedEventRepository.GetByRuleAndSourceEventAsync(rule.Id, sourceEventId, ct);
+        if (mapping is null) return;
 
-        if (change.IsCancelled)
-        {
-            if (mapping is not null)
-            {
-                await calendarSyncer.DeleteBlockAsync(rule.TargetCalendarId, targetToken, mapping.TargetBlockId, ct);
-                await syncedEventRepository.DeleteAsync(mapping.Id, ct);
-            }
-            return;
-        }
+        await calendarSyncer.DeleteBlockAsync(rule.TargetCalendarId, targetToken, mapping.TargetBlockId, ct);
+        await syncedEventRepository.DeleteAsync(mapping.Id, ct);
+    }
 
-        var title = rule.CopyTitle && change.Title is not null ? change.Title : rule.CustomTitle;
+    private async Task ProcessChangedEventAsync(
+        SyncRule rule, string targetToken, CalendarEventDto ev, CancellationToken ct)
+    {
+        var title = rule.CopyTitle && ev.Title is not null ? ev.Title : rule.CustomTitle;
+        var mapping = await syncedEventRepository.GetByRuleAndSourceEventAsync(rule.Id, ev.Id, ct);
 
         if (mapping is not null)
         {
-            if (change.UpdatedAt > mapping.SourceUpdatedAt)
+            if (ev.UpdatedAt > mapping.SourceUpdatedAt)
             {
                 await calendarSyncer.UpdateBlockAsync(
                     rule.TargetCalendarId, targetToken, mapping.TargetBlockId,
-                    title, change.Start!.Value, change.End!.Value, ct);
+                    title, ev.Start, ev.End, ct);
 
-                var updated = mapping with { SourceUpdatedAt = change.UpdatedAt };
-                await syncedEventRepository.UpdateAsync(updated, ct);
+                await syncedEventRepository.UpdateAsync(mapping with { SourceUpdatedAt = ev.UpdatedAt }, ct);
             }
         }
         else
         {
             var blockId = await calendarSyncer.CreateBlockAsync(
                 rule.TargetCalendarId, targetToken,
-                title, change.Start!.Value, change.End!.Value, ct);
+                title, ev.Start, ev.End, ct);
 
             await syncedEventRepository.CreateAsync(
-                new SyncedEventMapping(Guid.NewGuid(), rule.Id, change.EventId, blockId, change.UpdatedAt), ct);
+                new SyncedEventMapping(Guid.NewGuid(), rule.Id, ev.Id, blockId, ev.UpdatedAt), ct);
         }
     }
 }
