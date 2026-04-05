@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.Extensions.Logging;
 using Syncify.Shared;
 using Syncify.Sync.Application.DTOs;
 using Syncify.Sync.Application.Ports;
@@ -11,33 +12,52 @@ public sealed class SyncExecutor(
     ISyncRuleRepository ruleRepository,
     IConnectionService connectionService,
     ICalendarSyncer calendarSyncer,
-    ISyncedEventRepository syncedEventRepository)
+    ISyncedEventRepository syncedEventRepository,
+    ILogger<SyncExecutor> logger)
 {
     public async Task<Result<Unit>> ExecuteRuleAsync(Guid ruleId, CancellationToken ct = default)
     {
+        logger.LogInformation("Starting sync execution for rule {RuleId}", ruleId);
+
         var rule = await ruleRepository.GetByIdAsync(ruleId, ct);
         if (rule is null)
+        {
+            logger.LogWarning("SyncRule {RuleId} not found", ruleId);
             return Result<Unit>.Failure(new ApplicationError.NotFound("SyncRule", ruleId));
+        }
 
         if (rule.Status != SyncRuleStatus.Active)
+        {
+            logger.LogWarning("SyncRule {RuleId} is not active (Status: {Status})", ruleId, rule.Status);
             return Result<Unit>.Failure(new ApplicationError.Validation(["Only active rules can be executed."]));
+        }
 
-        var sourceToken = await connectionService.GetFreshAccessTokenAsync(rule.SourceCalendarId, ct);
-        var targetToken = await connectionService.GetFreshAccessTokenAsync(rule.TargetCalendarId, ct);
+        try
+        {
+            var sourceToken = await connectionService.GetFreshAccessTokenAsync(rule.SourceCalendarId, ct);
+            var targetToken = await connectionService.GetFreshAccessTokenAsync(rule.TargetCalendarId, ct);
 
-        var result = await calendarSyncer.FetchChangesAsync(
-            rule.SourceCalendarId, sourceToken, rule.SyncCursor, ct);
+            var result = await calendarSyncer.FetchChangesAsync(
+                rule.SourceCalendarId, sourceToken, rule.SyncCursor, ct);
 
-        foreach (var eventId in result.DeletedEventIds)
-            await ProcessDeletionAsync(rule, targetToken, eventId, ct);
+            foreach (var eventId in result.DeletedEventIds)
+                await ProcessDeletionAsync(rule, targetToken, eventId, ct);
 
-        foreach (var ev in result.ChangedEvents)
-            await ProcessChangedEventAsync(rule, targetToken, ev, ct);
+            foreach (var ev in result.ChangedEvents)
+                await ProcessChangedEventAsync(rule, targetToken, ev, ct);
 
-        rule.UpdateSyncCursor(result.NewCursor, DateTime.UtcNow);
-        await ruleRepository.UpdateAsync(rule, ct);
+            rule.UpdateSyncCursor(result.NewCursor, DateTime.UtcNow);
+            await ruleRepository.UpdateAsync(rule, ct);
 
-        return Result<Unit>.Success(Unit.Value);
+            logger.LogInformation("Successfully completed sync execution for rule {RuleId}", ruleId);
+
+            return Result<Unit>.Success(Unit.Value);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error occurred during sync execution for rule {RuleId}", ruleId);
+            throw;
+        }
     }
 
     private async Task ProcessDeletionAsync(
