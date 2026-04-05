@@ -80,9 +80,9 @@ public class CreateSyncRuleTests
             .ReturnsAsync(CalendarAccess.Read); // Not ReadWrite
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<DomainException>(() => 
+        var exception = await Assert.ThrowsAsync<DomainException>(() =>
             _handler.Handle(command, CancellationToken.None));
-        
-        Assert.Contains("ReadWrite", exception.Message);
+
+        Assert.Equal(DomainErrorCode.AccessViolation, exception.Code);
     }
 }
