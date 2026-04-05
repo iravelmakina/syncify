@@ -2,22 +2,18 @@
   "Logging": {
     "LogLevel": {
       "Default": "Information",
-      "Microsoft.AspNetCore": "Warning"
+      "Microsoft.AspNetCore": "Information",
+      "Microsoft.EntityFrameworkCore": "Warning"
     }
   },
-  "AllowedHosts": "*",
   "ConnectionStrings": {
     "DefaultConnection": "Host=localhost;Port=5432;Database=syncify;Username=syncify;Password=syncify"
   },
   "Google": {
-    "ClientId": "",
-    "ClientSecret": "",
-    "RedirectUri": "urn:ietf:wg:oauth:2.0:oob"
+    "ClientId": "your-client-id",
+    "ClientSecret": "your-client-secret"
   },
   "Encryption": {
-    "Key": ""
-  },
-  "SyncPoller": {
-    "IntervalSeconds": 300
+    "Key": "dev-key-replace-in-production-32b"
   }
 }

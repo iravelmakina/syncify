@@ -1,0 +1,29 @@
+using Syncify.Shared;
+
+namespace Syncify.Api.Middleware;
+
+public sealed class UserIdMiddleware(RequestDelegate next)
+{
+    public const string UserIdKey = "UserId";
+
+    public async Task InvokeAsync(HttpContext context)
+    {
+        if (!context.Request.Headers.TryGetValue("X-User-ID", out var header)
+            || !Guid.TryParse(header, out var parsed)
+            || parsed == Guid.Empty)
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            await context.Response.WriteAsJsonAsync(new { error = "Missing or invalid X-User-ID header." });
+            return;
+        }
+
+        context.Items[UserIdKey] = UserId.From(parsed);
+        await next(context);
+    }
+}
+
+public static class UserIdMiddlewareExtensions
+{
+    public static UserId GetUserId(this HttpContext context)
+        => (UserId)context.Items[UserIdMiddleware.UserIdKey]!;
+}
