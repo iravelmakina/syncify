@@ -38,7 +38,7 @@ public class CalendarAccountTests
         var ex = Assert.Throws<DomainException>(() =>
             account.RefreshCredential(newCredential, Now));
 
-        Assert.Contains("revoked", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(DomainErrorCode.InvalidState, ex.Code);
     }
     
     [Fact]
@@ -69,6 +69,6 @@ public class CalendarAccountTests
         var ex = Assert.Throws<DomainException>(() =>
             account.RefreshCalendars(calendars, Now));
 
-        Assert.Contains("active", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(DomainErrorCode.InvalidState, ex.Code);
     }
 }
