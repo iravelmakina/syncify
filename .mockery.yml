@@ -1,6 +1,0 @@
-template: testify
-dir: '{{.InterfaceDirRelative}}/mocks'
-filename: '{{.InterfaceName}}.go'
-pkgname: mocks
-structname: '{{.InterfaceName}}'
-packages:
