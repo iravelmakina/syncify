@@ -3,13 +3,12 @@ using Syncify.Api.Endpoints;
 using Syncify.Api.Middleware;
 using Syncify.Connections.Infrastructure;
 using Syncify.Shared;
+using Scalar.AspNetCore;
 using Syncify.Sync.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
@@ -30,8 +29,7 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.MapScalarApiReference();
 }
 
 app.UseExceptionHandler();
