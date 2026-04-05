@@ -51,14 +51,4 @@ public class CalendarAccountRepository : ICalendarAccountRepository
 
         return entities.Select(e => e.ToDomain()).ToList();
     }
-
-    public async Task<int> CountByUserAndProviderAsync(
-        UserId userId,
-        Provider provider,
-        CancellationToken ct = default)
-    {
-        return await _db.CalendarAccounts
-            .CountAsync(a => a.UserId == userId.Value
-                && a.Provider == provider.ToString(), ct);
-    }
 }
