@@ -1,6 +1,6 @@
 namespace Syncify.Sync.Application.DTOs;
 
-public sealed record SyncedEvent(
+public sealed record SyncedEventMapping(
     Guid Id,
     Guid SyncRuleId,
     string SourceEventId,

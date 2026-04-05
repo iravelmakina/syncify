@@ -73,7 +73,7 @@ public sealed class SyncExecutor(
                 title, change.Start!.Value, change.End!.Value, ct);
 
             await syncedEventRepository.CreateAsync(
-                new SyncedEvent(Guid.NewGuid(), rule.Id, change.EventId, blockId, change.UpdatedAt), ct);
+                new SyncedEventMapping(Guid.NewGuid(), rule.Id, change.EventId, blockId, change.UpdatedAt), ct);
         }
     }
 }
