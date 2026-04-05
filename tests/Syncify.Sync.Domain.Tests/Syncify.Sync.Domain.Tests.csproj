@@ -19,7 +19,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Syncify.Sync.Application\Syncify.Sync.Application.csproj" />
     <ProjectReference Include="..\..\src\Syncify.Sync.Domain\Syncify.Sync.Domain.csproj" />
     <ProjectReference Include="..\..\src\Syncify.Shared\Syncify.Shared.csproj" />
   </ItemGroup>
