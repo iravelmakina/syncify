@@ -35,7 +35,7 @@ public sealed class SyncifyWebApplicationFactory : WebApplicationFactory<Program
             options.UseNpgsql(_postgres.GetConnectionString()));
     }
 
-    public async ValueTask InitializeAsync()
+    public async Task InitializeAsync()
     {
         await _postgres.StartAsync();
 
@@ -46,7 +46,7 @@ public sealed class SyncifyWebApplicationFactory : WebApplicationFactory<Program
         await syncDb.Database.EnsureCreatedAsync();
     }
 
-    public new async ValueTask DisposeAsync()
+    public new async Task DisposeAsync()
     {
         await _postgres.DisposeAsync();
         await base.DisposeAsync();
