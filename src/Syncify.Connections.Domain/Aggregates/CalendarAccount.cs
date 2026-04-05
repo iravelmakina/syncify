@@ -76,4 +76,27 @@ public sealed class CalendarAccount
         _calendars = calendars.ToList();
         UpdatedAt = utcNow;
     }
-}
+
+    public static CalendarAccount Reconstitute(
+        Guid id,
+        UserId userId,
+        Provider provider,
+        OAuthCredential credential,
+        List<CalendarInfo> calendars,
+        ConnectionStatus status,
+        DateTime createdAt,
+        DateTime updatedAt)
+    {
+        return new CalendarAccount
+        {
+            Id = id,
+            UserId = userId,
+            Provider = provider,
+            Credential = credential,
+            _calendars = calendars,
+            Status = status,
+            CreatedAt = createdAt,
+            UpdatedAt = updatedAt
+        };
+    }
+    }

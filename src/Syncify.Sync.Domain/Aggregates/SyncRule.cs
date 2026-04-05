@@ -61,6 +61,35 @@ public sealed class SyncRule
             UpdatedAt = utcNow
         };
     }
+
+    public static SyncRule Reconstitute(
+        Guid id,
+        UserId userId,
+        Guid sourceCalendarId,
+        Guid targetCalendarId,
+        bool copyTitle,
+        string customTitle,
+        FilterPolicy filterPolicy,
+        SyncRuleStatus status,
+        string? syncCursor,
+        DateTime createdAt,
+        DateTime updatedAt)
+    {
+        return new SyncRule
+        {
+            Id = id,
+            UserId = userId,
+            SourceCalendarId = sourceCalendarId,
+            TargetCalendarId = targetCalendarId,
+            CopyTitle = copyTitle,
+            CustomTitle = customTitle,
+            FilterPolicy = filterPolicy,
+            Status = status,
+            SyncCursor = syncCursor,
+            CreatedAt = createdAt,
+            UpdatedAt = updatedAt
+        };
+    }
     
     public void Archive(DateTime utcNow)
     {
