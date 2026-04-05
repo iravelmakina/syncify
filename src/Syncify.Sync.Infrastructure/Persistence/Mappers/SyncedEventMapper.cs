@@ -7,14 +7,12 @@ public static class SyncedEventMapper
 {
     public static SyncedEventMapping ToDto(this SyncedEventEntity entity)
     {
-        return new SyncedEventMapping
-        {
-            Id = entity.Id,
-            SyncRuleId = entity.SyncRuleId,
-            SourceEventId = entity.SourceEventId,
-            TargetBlockId = entity.TargetBlockId,
-            SourceUpdatedAt = entity.SourceUpdatedAt
-        };
+        return new SyncedEventMapping(
+            entity.Id,
+            entity.SyncRuleId,
+            entity.SourceEventId,
+            entity.TargetBlockId,
+            entity.SourceUpdatedAt);
     }
 
     public static SyncedEventEntity ToEntity(this SyncedEventMapping mapping)
