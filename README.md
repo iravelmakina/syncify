@@ -72,10 +72,47 @@ docker run -d --name syncify-db \
 #    - Encryption:Key (base64-encoded 32-byte key)
 
 # 3. Run
+# Migrations run automatically in Development environment.
+# To run ONLY migrations, use:
+# dotnet run --project src/Syncify.Api -- --migrate
+
 dotnet run --project src/Syncify.Api
 ```
 
 The API starts at `http://localhost:5030` by default.
+
+## Helpful Commands
+
+### Configuration
+Generate a valid 32-byte Base64 encryption key (required for `Encryption:Key`):
+```bash
+openssl rand -base64 32
+```
+
+### Docker Management
+```bash
+# View running containers
+docker ps
+
+# View application logs
+docker logs -f syncify-app
+
+# Stop and remove all project containers
+docker stop syncify-app syncify-db
+docker rm syncify-app syncify-db
+```
+
+### Database (PostgreSQL)
+```bash
+# Connect to the database via psql (inside container)
+docker exec -it syncify-db psql -U syncify -d syncify
+
+# List all tables
+# \dt
+
+# View migration history
+# SELECT * FROM "__EFMigrationsHistory";
+```
 
 ## Run with Docker
 
