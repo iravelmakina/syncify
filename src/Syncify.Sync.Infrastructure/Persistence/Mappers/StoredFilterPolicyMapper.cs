@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Syncify.Shared.Errors;
 using Syncify.Sync.Application.Filters.Codecs;
 using Syncify.Sync.Domain.ValueObjects;
@@ -22,7 +23,9 @@ public static class StoredFilterPolicyMapper
 
             var criteria = stored.Criteria
                 .Select(criterion => FilterCriterionCodecRegistry.GetByType(criterion.Type).Deserialize(
-                    criterion.Properties.ToDictionary(x => x.Key, x => x.Value)))
+                    criterion.Properties.ToDictionary(
+                        static x => x.Key,
+                        static x => JsonNode.Parse(x.Value.GetRawText()))))
                 .ToList();
 
             return new FilterPolicy(criteria);
@@ -45,7 +48,9 @@ public static class StoredFilterPolicyMapper
                     {
                         Type = codec.Type,
                         Properties = codec.Serialize(criterion)
-                            .ToDictionary(x => x.Key, x => x.Value)
+                            .ToDictionary(
+                                static x => x.Key,
+                                static x => JsonSerializer.SerializeToElement(x.Value, JsonOptions))
                     };
                 })
                 .ToList()

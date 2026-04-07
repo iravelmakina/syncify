@@ -2,6 +2,7 @@ using Syncify.Api.Requests;
 using Syncify.Shared.Errors;
 using Syncify.Sync.Application.Filters.Codecs;
 using Syncify.Sync.Domain.ValueObjects;
+using System.Text.Json.Nodes;
 
 namespace Syncify.Api.Mappers;
 
@@ -23,7 +24,9 @@ internal static class FilterPolicyRequestMapper
                 $"Filter criterion at index {index} must include a valid 'type'.");
 
         var type = request.Type.Trim();
-        var properties = request.Properties.ToDictionary(x => x.Key, x => x.Value);
+        var properties = request.Properties.ToDictionary(
+            static x => x.Key,
+            static x => JsonNode.Parse(x.Value.GetRawText()));
 
         return FilterCriterionCodecRegistry.GetByType(type).Deserialize(properties);
     }

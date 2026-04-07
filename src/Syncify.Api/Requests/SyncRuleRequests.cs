@@ -1,4 +1,4 @@
-using System.Text.Json.Nodes;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Syncify.Api.Requests;
@@ -24,5 +24,5 @@ public sealed record FilterCriterionRequest
     public string? Type { get; init; }
 
     [JsonExtensionData]
-    public IDictionary<string, JsonNode?> Properties { get; init; } = new Dictionary<string, JsonNode?>();
+    public IDictionary<string, JsonElement> Properties { get; init; } = new Dictionary<string, JsonElement>();
 }
