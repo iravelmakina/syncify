@@ -150,7 +150,10 @@ After running the app, access Scalar UI at:
 http://localhost:8080/scalar/v1
 ```
 
-> All endpoints expect an `X-User-ID` header (UUID) for user identification.
+> All endpoints expect an `X-User-ID` header (UUID) for user identification. For testing, you can use:
+> ```
+> 00000000-0000-0000-0000-000000000001
+> ```
 
 ### Filter Policy JSON
 
