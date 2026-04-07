@@ -36,15 +36,17 @@ public sealed class SyncExecutor(
         {
             var sourceToken = await connectionService.GetFreshAccessTokenAsync(rule.SourceCalendarId, ct);
             var targetToken = await connectionService.GetFreshAccessTokenAsync(rule.TargetCalendarId, ct);
+            var sourceProviderCalendarId = await connectionService.GetProviderCalendarIdAsync(rule.SourceCalendarId, ct);
+            var targetProviderCalendarId = await connectionService.GetProviderCalendarIdAsync(rule.TargetCalendarId, ct);
 
             var result = await calendarSyncer.FetchChangesAsync(
-                rule.SourceCalendarId, sourceToken, rule.SyncCursor, ct);
+                sourceProviderCalendarId, sourceToken, rule.SyncCursor, ct);
 
             foreach (var eventId in result.DeletedEventIds)
-                await ProcessDeletionAsync(rule, targetToken, eventId, ct);
+                await ProcessDeletionAsync(rule, targetProviderCalendarId, targetToken, eventId, ct);
 
             foreach (var ev in result.ChangedEvents)
-                await ProcessChangedEventAsync(rule, targetToken, ev, ct);
+                await ProcessChangedEventAsync(rule, targetProviderCalendarId, targetToken, ev, ct);
 
             rule.UpdateSyncCursor(result.NewCursor, DateTime.UtcNow);
             await ruleRepository.UpdateAsync(rule, ct);
@@ -61,17 +63,25 @@ public sealed class SyncExecutor(
     }
 
     private async Task ProcessDeletionAsync(
-        SyncRule rule, string targetToken, string sourceEventId, CancellationToken ct)
+        SyncRule rule,
+        string targetProviderCalendarId,
+        string targetToken,
+        string sourceEventId,
+        CancellationToken ct)
     {
         var mapping = await syncedEventRepository.GetByRuleAndSourceEventAsync(rule.Id, sourceEventId, ct);
         if (mapping is null) return;
 
-        await calendarSyncer.DeleteBlockAsync(rule.TargetCalendarId, targetToken, mapping.TargetBlockId, ct);
+        await calendarSyncer.DeleteBlockAsync(targetProviderCalendarId, targetToken, mapping.TargetBlockId, ct);
         await syncedEventRepository.DeleteAsync(mapping.Id, ct);
     }
 
     private async Task ProcessChangedEventAsync(
-        SyncRule rule, string targetToken, CalendarEventDto ev, CancellationToken ct)
+        SyncRule rule,
+        string targetProviderCalendarId,
+        string targetToken,
+        CalendarEventDto ev,
+        CancellationToken ct)
     {
         var title = rule.CopyTitle && ev.Title is not null ? ev.Title : rule.CustomTitle;
         var mapping = await syncedEventRepository.GetByRuleAndSourceEventAsync(rule.Id, ev.Id, ct);
@@ -81,7 +91,7 @@ public sealed class SyncExecutor(
             if (ev.UpdatedAt > mapping.SourceUpdatedAt)
             {
                 await calendarSyncer.UpdateBlockAsync(
-                    rule.TargetCalendarId, targetToken, mapping.TargetBlockId,
+                    targetProviderCalendarId, targetToken, mapping.TargetBlockId,
                     title, ev.Start, ev.End, ct);
 
                 await syncedEventRepository.UpdateAsync(mapping with { SourceUpdatedAt = ev.UpdatedAt }, ct);
@@ -90,7 +100,7 @@ public sealed class SyncExecutor(
         else
         {
             var blockId = await calendarSyncer.CreateBlockAsync(
-                rule.TargetCalendarId, targetToken,
+                targetProviderCalendarId, targetToken,
                 title, ev.Start, ev.End, ct);
 
             await syncedEventRepository.CreateAsync(
