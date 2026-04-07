@@ -23,6 +23,7 @@ public static class DependencyInjection
 
         services.AddScoped<ISyncRuleRepository, SyncRuleRepository>();
         services.AddScoped<ISyncedEventRepository, SyncedEventRepository>();
+        services.AddScoped<ISyncHealthCheck, SyncHealthCheck>();
         services.AddScoped<SyncExecutor>();
 
         services.AddHttpClient<ICalendarSyncer, GoogleCalendarSyncer>();

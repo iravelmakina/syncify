@@ -25,6 +25,7 @@ public static class DependencyInjection
         services.AddScoped<ICalendarAccountRepository, CalendarAccountRepository>();
         services.AddScoped<ITokenEncryptor, TokenEncryptor>();
         services.AddScoped<IConnectionService, ConnectionService>();
+        services.AddScoped<IConnectionsHealthCheck, ConnectionsHealthCheck>();
 
         services.AddHttpClient<IOAuthProvider, GoogleOAuthProvider>();
         services.AddHttpClient<ICalendarProvider, GoogleCalendarProvider>();

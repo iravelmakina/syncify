@@ -1,6 +1,5 @@
-using Microsoft.EntityFrameworkCore;
-using Syncify.Connections.Infrastructure.Persistence;
-using Syncify.Sync.Infrastructure.Persistence;
+using Syncify.Connections.Application.Ports;
+using Syncify.Sync.Application.Ports;
 
 namespace Syncify.Api.Endpoints;
 
@@ -11,15 +10,19 @@ public static class HealthEndpoints
         var group = routes.MapGroup("/").WithTags("Health");
 
         group.MapGet("/health", async (
-            ConnectionsDbContext connectionsDb,
-            SyncDbContext syncDb,
+            IConnectionsHealthCheck connectionsHealth,
+            ISyncHealthCheck syncHealth,
             CancellationToken ct) =>
         {
             try
             {
-                await connectionsDb.Database.CanConnectAsync(ct);
-                await syncDb.Database.CanConnectAsync(ct);
-                return Results.Ok(new { status = "healthy" });
+                var connectionsOk = await connectionsHealth.IsHealthyAsync(ct);
+                var syncOk = await syncHealth.IsHealthyAsync(ct);
+
+                if (connectionsOk && syncOk)
+                    return Results.Ok(new { status = "healthy" });
+
+                return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
             }
             catch
             {
