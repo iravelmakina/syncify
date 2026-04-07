@@ -12,14 +12,28 @@ public sealed class CompleteOAuthCommandHandler(
     IOAuthProvider oAuthProvider)
     : IRequestHandler<CompleteOAuthCommand, Result<Guid>>
 {
+
     public async Task<Result<Guid>> Handle(CompleteOAuthCommand command, CancellationToken ct)
     {
-        var result = await oAuthProvider.ExchangeCodeAsync(command.Code, ct);
+        var oauthResult = await oAuthProvider.ExchangeCodeAsync(command.Code, ct);
+        var newCredential = new OAuthCredential(oauthResult.RefreshToken, oauthResult.TokenExpiresAt);
+        var utcNow = DateTime.UtcNow;
 
-        var credential = new OAuthCredential(result.RefreshToken, result.TokenExpiresAt);
-        var account = CalendarAccount.Create(command.UserId, Provider.Google, credential, DateTime.UtcNow);
+        var existingConnections = await repository.ListByUserAsync(command.UserId, ct);
+        var existingAccount = existingConnections.FirstOrDefault(c =>
+            c.Provider == Provider.Google && c.ProviderAccountId == oauthResult.ProviderAccountId);
 
-        await repository.CreateAsync(account, ct);
-        return Result<Guid>.Success(account.Id);
+        if (existingAccount is not null)
+        {
+            existingAccount.Reconnect(newCredential, utcNow);
+            await repository.UpdateAsync(existingAccount, ct);
+            return Result<Guid>.Success(existingAccount.Id);
+        }
+
+        var newAccount = CalendarAccount.Create(
+            command.UserId, Provider.Google, oauthResult.ProviderAccountId, oauthResult.Email,
+            newCredential, utcNow);
+        await repository.CreateAsync(newAccount, ct);
+        return Result<Guid>.Success(newAccount.Id);
     }
 }

@@ -24,6 +24,14 @@ internal sealed class CalendarAccountConfiguration : IEntityTypeConfiguration<Ca
             .HasColumnName("provider")
             .IsRequired();
 
+        builder.Property(x => x.ProviderAccountId)
+            .HasColumnName("provider_account_id")
+            .IsRequired();
+
+        builder.Property(x => x.Email)
+            .HasColumnName("email")
+            .IsRequired();
+
         builder.Property(x => x.RefreshToken)
             .HasColumnName("refresh_token_enc")
             .IsRequired();
@@ -43,6 +51,9 @@ internal sealed class CalendarAccountConfiguration : IEntityTypeConfiguration<Ca
         builder.Property(x => x.UpdatedAt)
             .HasColumnName("updated_at")
             .IsRequired();
+
+        builder.HasIndex(x => new { x.UserId, x.Provider, x.ProviderAccountId })
+            .IsUnique();
 
         builder.HasMany(x => x.Calendars)
             .WithOne(c => c.Account)
