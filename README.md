@@ -56,6 +56,39 @@ We intentionally start with a modular monolith rather than microservices because
 - A Google Cloud project with Calendar API enabled and OAuth 2.0 credentials (installed application type)
 - PostgreSQL 16+
 
+## Helpful Commands
+
+### Configuration
+Generate a valid 32-byte Base64 encryption key (required for `Encryption:Key`):
+```bash
+openssl rand -base64 32
+```
+
+### Docker Management
+```bash
+# View running containers
+docker ps
+
+# View application logs
+docker logs -f syncify-app
+
+# Stop and remove all project containers
+docker stop syncify-app syncify-db
+docker rm syncify-app syncify-db
+```
+
+### Database (PostgreSQL)
+```bash
+# Connect to the database via psql (inside container)
+docker exec -it syncify-db psql -U syncify -d syncify
+
+# List all tables
+# \dt
+
+# View migration history
+# SELECT * FROM "__EFMigrationsHistory";
+```
+
 ## Run locally
 
 ```bash
@@ -67,11 +100,15 @@ docker run -d --name syncify-db \
   -p 5432:5432 \
   postgres:16
 
-# 2. Configure secrets in appsettings.Development.json or env vars
+# 2. Configure secrets in appsettings.Development.json
 #    - Google:ClientId / Google:ClientSecret
 #    - Encryption:Key (base64-encoded 32-byte key)
 
 # 3. Run
+# Migrations run automatically in Development environment.
+# To run ONLY migrations, use:
+# dotnet run --project src/Syncify.Api -- --migrate
+
 dotnet run --project src/Syncify.Api
 ```
 
@@ -83,13 +120,10 @@ The API starts at `http://localhost:5030` by default.
 # Build the image
 docker build -t syncify .
 
-# Run (pass config via env vars)
+# Run (make sure to fill in .env)
 docker run -p 8080:8080 \
   --env-file .env \
-  -e ConnectionStrings__DefaultConnection="Host=host.docker.internal;Port=5432;Database=syncify;Username=syncify;Password=syncify" \
-  -e Google__ClientId="your-client-id" \
-  -e Google__ClientSecret="your-client-secret" \
-  -e Encryption__Key="your-base64-key" \
+  -e ASPNETCORE_ENVIRONMENT=Development \
   syncify
 ```
 

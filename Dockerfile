@@ -10,6 +10,7 @@ COPY src/Syncify.Connections.Infrastructure/Syncify.Connections.Infrastructure.c
 COPY src/Syncify.Sync.Domain/Syncify.Sync.Domain.csproj                           src/Syncify.Sync.Domain/
 COPY src/Syncify.Sync.Application/Syncify.Sync.Application.csproj                 src/Syncify.Sync.Application/
 COPY src/Syncify.Sync.Infrastructure/Syncify.Sync.Infrastructure.csproj           src/Syncify.Sync.Infrastructure/
+COPY tests/Syncify.Connections.Application.Tests/Syncify.Connections.Application.Tests.csproj tests/Syncify.Connections.Application.Tests/
 COPY tests/Syncify.Connections.Domain.Tests/Syncify.Connections.Domain.Tests.csproj tests/Syncify.Connections.Domain.Tests/
 COPY tests/Syncify.Sync.Domain.Tests/Syncify.Sync.Domain.Tests.csproj             tests/Syncify.Sync.Domain.Tests/
 COPY tests/Syncify.Sync.Application.Tests/Syncify.Sync.Application.Tests.csproj   tests/Syncify.Sync.Application.Tests/

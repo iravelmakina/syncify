@@ -2,7 +2,6 @@ using Syncify.Api.Behaviors;
 using Syncify.Api.Endpoints;
 using Syncify.Api.Middleware;
 using Syncify.Connections.Infrastructure;
-using Syncify.Shared;
 using Scalar.AspNetCore;
 using Syncify.Sync.Infrastructure;
 
@@ -25,6 +24,21 @@ builder.Services.AddConnectionsModule(builder.Configuration);
 builder.Services.AddSyncModule(builder.Configuration);
 
 var app = builder.Build();
+
+// 1. Run during development
+// 2. Or if explicitly requested via --migrate flag (useful for CI/CD)
+if (app.Environment.IsDevelopment() || args.Contains("--migrate"))
+{
+    await app.Services.MigrateConnectionsDatabaseAsync();
+    await app.Services.MigrateSyncDatabaseAsync();
+    
+    if (args.Contains("--migrate"))
+    {
+        var logger = app.Services.GetRequiredService<ILogger<Program>>();
+        logger.LogInformation("Migrations completed successfully.");
+        return;
+    }
+}
 
 if (app.Environment.IsDevelopment())
 {
