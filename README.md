@@ -51,21 +51,138 @@ We intentionally start with a modular monolith rather than microservices because
 
 ## Prerequisites
 
-- .NET 9.0 SDK
-- Docker & Docker Compose
+- .NET 10.0 SDK
+- Docker
 - A Google Cloud project with Calendar API enabled and OAuth 2.0 credentials (installed application type)
+- PostgreSQL 16+
 
 ## Run locally
-TBA
+
+```bash
+# 1. Start PostgreSQL (if not running)
+docker run -d --name syncify-db \
+  -e POSTGRES_USER=syncify \
+  -e POSTGRES_PASSWORD=syncify \
+  -e POSTGRES_DB=syncify \
+  -p 5432:5432 \
+  postgres:16
+
+# 2. Configure secrets in appsettings.Development.json or env vars
+#    - Google:ClientId / Google:ClientSecret
+#    - Encryption:Key (base64-encoded 32-byte key)
+
+# 3. Run
+dotnet run --project src/Syncify.Api
+```
+
+The API starts at `http://localhost:5030` by default.
 
 ## Run with Docker
-TBA
+
+```bash
+# Build the image
+docker build -t syncify .
+
+# Run (pass config via env vars)
+docker run -p 8080:8080 \
+  -e ConnectionStrings__DefaultConnection="Host=host.docker.internal;Port=5432;Database=syncify;Username=syncify;Password=syncify" \
+  -e Google__ClientId="your-client-id" \
+  -e Google__ClientSecret="your-client-secret" \
+  -e Encryption__Key="your-base64-key" \
+  syncify
+```
+
+The containerized API listens on port 8080.
 
 ## Tests
-TBA
+
+```bash
+# Run all tests
+dotnet test syncify.sln
+
+# Run specific test project
+dotnet test tests/Syncify.Connections.Domain.Tests
+dotnet test tests/Syncify.Sync.Domain.Tests
+dotnet test tests/Syncify.Sync.Application.Tests
+dotnet test tests/Syncify.Api.Tests          # requires Docker (Testcontainers)
+```
 
 ## API Examples
-TBA
+
+All endpoints expect an `X-User-ID` header (UUID) for user identification.
+
+```bash
+BASE=http://localhost:5030
+USER_ID="00000000-0000-0000-0000-000000000001"
+
+# --- Connections ---
+
+# Generate Google OAuth URL
+curl -s -X POST $BASE/connections/google/auth-url
+
+# Complete OAuth callback
+curl -s -X POST $BASE/connections/google/callback \
+  -H "Content-Type: application/json" \
+  -H "X-User-ID: $USER_ID" \
+  -d '{"code": "auth-code-from-google"}'
+
+# List connections
+curl -s $BASE/connections -H "X-User-ID: $USER_ID"
+
+# List calendars for a connection
+curl -s $BASE/connections/{accountId}/calendars
+
+# Revoke a connection
+curl -s -X DELETE $BASE/connections/{accountId}
+
+# --- Sync Rules ---
+
+# Create a sync rule
+curl -s -X POST $BASE/sync-rules \
+  -H "Content-Type: application/json" \
+  -H "X-User-ID: $USER_ID" \
+  -d '{
+    "sourceCalendarId": "...",
+    "targetCalendarId": "...",
+    "copyTitle": false,
+    "customTitle": "Busy",
+    "filterPolicy": { "criteria": [] }
+  }'
+
+# Get a sync rule
+curl -s $BASE/sync-rules/{id}
+
+# List sync rules
+curl -s $BASE/sync-rules -H "X-User-ID: $USER_ID"
+
+# Archive a sync rule
+curl -s -X POST $BASE/sync-rules/{id}/archive
+
+# Resume a sync rule
+curl -s -X POST $BASE/sync-rules/{id}/resume
+
+# Update filter policy
+curl -s -X PATCH $BASE/sync-rules/{id}/filter \
+  -H "Content-Type: application/json" \
+  -d '{"filterPolicy": {"criteria": []}}'
+
+# Update title settings
+curl -s -X PATCH $BASE/sync-rules/{id}/title \
+  -H "Content-Type: application/json" \
+  -d '{"copyTitle": true, "customTitle": ""}'
+
+# Trigger manual sync execution
+curl -s -X POST $BASE/sync-rules/{id}/execute
+
+# --- Health ---
+
+# Health check
+curl -s $BASE/health
+```
 
 ## Team workflow
-TBA
+
+1. Each team member works on a separate feature branch
+2. Open a PR against `main` when ready for review
+3. Domain and application tests must pass before merge
+4. Integration tests (`Syncify.Api.Tests`) run against a real PostgreSQL via Testcontainers
