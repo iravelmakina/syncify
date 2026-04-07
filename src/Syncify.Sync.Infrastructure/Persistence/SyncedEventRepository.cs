@@ -35,8 +35,15 @@ internal sealed class SyncedEventRepository : ISyncedEventRepository
 
     public async Task UpdateAsync(SyncedEventMapping mapping, CancellationToken ct = default)
     {
-        var entity = mapping.ToEntity();
-        _db.SyncedEvents.Update(entity);
+        var entity = await _db.SyncedEvents
+            .FirstOrDefaultAsync(x => x.Id == mapping.Id, ct);
+
+        if (entity == null)
+            throw new InvalidOperationException($"Synced event {mapping.Id} not found.");
+
+        var updated = mapping.ToEntity();
+        
+        _db.Entry(entity).CurrentValues.SetValues(updated);
         await _db.SaveChangesAsync(ct);
     }
 

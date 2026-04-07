@@ -35,8 +35,32 @@ internal sealed class CalendarAccountRepository : ICalendarAccountRepository
 
     public async Task UpdateAsync(CalendarAccount account, CancellationToken ct = default)
     {
-        var entity = account.ToEntity();
-        _db.CalendarAccounts.Update(entity);
+        var entity = await _db.CalendarAccounts
+            .Include(a => a.Calendars)
+            .FirstOrDefaultAsync(a => a.Id == account.Id, ct);
+
+        if (entity == null)
+            throw new InvalidOperationException($"Account {account.Id} not found.");
+
+        var updated = account.ToEntity();
+        
+        _db.Entry(entity).CurrentValues.SetValues(updated);
+
+        foreach (var existing in entity.Calendars.ToList())
+        {
+            if (updated.Calendars.All(c => c.Id != existing.Id))
+                _db.Calendars.Remove(existing);
+        }
+
+        foreach (var @new in updated.Calendars)
+        {
+            var existing = entity.Calendars.FirstOrDefault(e => e.Id == @new.Id);
+            if (existing != null)
+                _db.Entry(existing).CurrentValues.SetValues(@new);
+            else
+                entity.Calendars.Add(@new);
+        }
+
         await _db.SaveChangesAsync(ct);
     }
 
