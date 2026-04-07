@@ -37,11 +37,11 @@ Register a webhook via `events.watch()`. Google sends a POST to our callback URL
 
 ### **Option B — Polling on interval**
 
-A background goroutine iterates over all active `SyncRule` records on a timer (e.g., every 5 minutes), fetching changes from source calendars and applying them to targets.
+A background hosted service iterates over all active `SyncRule` records on a timer (e.g., every 5 minutes), fetching changes from source calendars and applying them to targets.
 
 **Pros:**
 - Works anywhere — no public endpoint, no TLS, no webhook registration
-- Simple to implement — one goroutine, one ticker, one loop
+- Simple to implement — one hosted service, one timer, one loop
 - Failure recovery is automatic — if a cycle fails, the next one retries
 - Combined with Google's `syncToken`, polling is efficient — only changed events are returned
 
@@ -84,7 +84,7 @@ flowchart LR
 
 ### Change detection: CalendarSyncer Port
 
-Each provider has a different mechanism for detecting changes (Google uses syncToken, Outlook uses deltaLink, Apple uses ctag + etag diffing). The sync execution use case must not know which mechanism is in use.
+Each provider has a different mechanism for detecting changes (Google uses `syncToken`, Outlook uses `deltaLink`, Apple uses `ctag` + `etag` diffing). The sync execution use case must not know which mechanism is in use.
 
 The cursor is an opaque string stored on `SyncRule.syncCursor`. Each provider adapter interprets it:
 - **Google adapter:** passes it as syncToken to events.list(), receives new token in response
@@ -133,7 +133,7 @@ When Google returns `410 Gone`, both `syncCursor` and all `synced_events` for th
 
 | Practice | Change |
 |---|---|
-| P4 (now) | Poller goroutine + manual trigger, in-process |
+| P4 (now) | Hosted-service poller + manual trigger, in-process |
 | P5 | Sync module extracted as service; poller stays with Sync (owns the data it iterates) |
 | P6 | Manual trigger publishes to RabbitMQ; poller publishes rule IDs to queue; consumers run ExecuteSync |
 | P7 | ExecuteSync becomes a Saga with persisted `SyncJob` state for observability |
