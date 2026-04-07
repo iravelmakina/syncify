@@ -123,6 +123,7 @@ docker build -t syncify .
 # Run (pass config via env vars)
 docker run -p 8080:8080 \
   --env-file .env \
+  -e ASPNETCORE_ENVIRONMENT=Development \
   -e ConnectionStrings__DefaultConnection="Host=host.docker.internal;Port=5432;Database=syncify;Username=syncify;Password=syncify" \
   -e Google__ClientId="your-client-id" \
   -e Google__ClientSecret="your-client-secret" \
