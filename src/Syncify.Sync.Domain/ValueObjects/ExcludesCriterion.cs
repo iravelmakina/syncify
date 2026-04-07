@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Syncify.Shared;
 
 namespace Syncify.Sync.Domain.ValueObjects;
@@ -5,6 +6,8 @@ namespace Syncify.Sync.Domain.ValueObjects;
 public sealed record ExcludesCriterion : IFilterCriterion
 {
     public IReadOnlyList<string> Excludes { get; }
+    
+    [JsonIgnore]
     public CalendarAccess MinimumAccess => CalendarAccess.FreeBusyOnly;
 
     public ExcludesCriterion(IReadOnlyList<string> excludes)

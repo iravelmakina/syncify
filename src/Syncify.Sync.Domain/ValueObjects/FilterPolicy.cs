@@ -2,15 +2,8 @@ using Syncify.Shared;
 
 namespace Syncify.Sync.Domain.ValueObjects;
 
-public sealed record FilterPolicy
+public sealed record FilterPolicy(IReadOnlyList<IFilterCriterion> Criteria)
 {
-    public IReadOnlyList<IFilterCriterion> Criteria { get; }
-
-    public FilterPolicy(IReadOnlyList<IFilterCriterion> criteria)
-    {
-        Criteria = criteria ?? [];
-    }
-
     public void ValidateAccess(CalendarAccess srcAccess)
     {
         foreach (var criterion in Criteria)

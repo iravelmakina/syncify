@@ -143,77 +143,77 @@ dotnet test tests/Syncify.Sync.Application.Tests
 dotnet test tests/Syncify.Api.Tests          # requires Docker (Testcontainers)
 ```
 
-## API Examples
+## OpenAPI
 
-All endpoints expect an `X-User-ID` header (UUID) for user identification.
+After running the app, access Scalar UI at:
+```
+http://localhost:8080/scalar/v1
+```
 
-```bash
-BASE=http://localhost:5030
-USER_ID="00000000-0000-0000-0000-000000000001"
+> All endpoints expect an `X-User-ID` header (UUID) for user identification.
 
-# --- Connections ---
+### Filter Policy JSON
 
-# Generate Google OAuth URL
-curl -s -X POST $BASE/connections/google/auth-url
+`filterPolicy.criteria` accepts all implementations of `IFilterCriterion` from the domain value objects.
+- `type` must be one of `excludes`, `keywords`, or `timeWindow`
+- `excludes` must contain at least one value
+- `keywords` must contain between 1 and 20 values
+- `startHour` and `endHour` must be between `0` and `23`, and `startHour` must be less than `endHour`
+- `weekdays` must contain at least one `DayOfWeek` value serialized as integers (`1` = Monday, ..., `5` = Friday)
 
-# Complete OAuth callback
-curl -s -X POST $BASE/connections/google/callback \
-  -H "Content-Type: application/json" \
-  -H "X-User-ID: $USER_ID" \
-  -d '{"code": "auth-code-from-google"}'
 
-# List connections
-curl -s $BASE/connections -H "X-User-ID: $USER_ID"
+Example with all currently supported criteria:
 
-# List calendars for a connection
-curl -s $BASE/connections/{accountId}/calendars
+```json
+{
+  "filterPolicy": {
+    "criteria": [
+      {
+        "type": "excludes",
+        "excludes": [
+          "out of office",
+          "holiday"
+        ]
+      },
+      {
+        "type": "keywords",
+        "keywords": [
+          "meeting",
+          "call"
+        ]
+      },
+      {
+        "type": "timeWindow",
+        "startHour": 9,
+        "endHour": 17,
+        "weekdays": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      }
+    ]
+  }
+}
+```
 
-# Revoke a connection
-curl -s -X DELETE $BASE/connections/{accountId}
+Single-criterion example:
 
-# --- Sync Rules ---
-
-# Create a sync rule
-curl -s -X POST $BASE/sync-rules \
-  -H "Content-Type: application/json" \
-  -H "X-User-ID: $USER_ID" \
-  -d '{
-    "sourceCalendarId": "...",
-    "targetCalendarId": "...",
-    "copyTitle": false,
-    "customTitle": "Busy",
-    "filterPolicy": { "criteria": [] }
-  }'
-
-# Get a sync rule
-curl -s $BASE/sync-rules/{id}
-
-# List sync rules
-curl -s $BASE/sync-rules -H "X-User-ID: $USER_ID"
-
-# Archive a sync rule
-curl -s -X POST $BASE/sync-rules/{id}/archive
-
-# Resume a sync rule
-curl -s -X POST $BASE/sync-rules/{id}/resume
-
-# Update filter policy
-curl -s -X PATCH $BASE/sync-rules/{id}/filter \
-  -H "Content-Type: application/json" \
-  -d '{"filterPolicy": {"criteria": []}}'
-
-# Update title settings
-curl -s -X PATCH $BASE/sync-rules/{id}/title \
-  -H "Content-Type: application/json" \
-  -d '{"copyTitle": true, "customTitle": ""}'
-
-# Trigger manual sync execution
-curl -s -X POST $BASE/sync-rules/{id}/execute
-
-# --- Health ---
-
-# Health check
-curl -s $BASE/health
+```json
+{
+  "filterPolicy": {
+    "criteria": [
+      {
+        "type": "excludes",
+        "keywords": [
+          "busy"
+        ]
+      }
+    ]
+  }
+}
 ```
 
 ## Team workflow
