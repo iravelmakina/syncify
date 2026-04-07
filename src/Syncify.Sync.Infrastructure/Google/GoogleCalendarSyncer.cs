@@ -23,12 +23,12 @@ internal sealed class GoogleCalendarSyncer : ICalendarSyncer
     }
 
     public async Task<FetchChangesResult> FetchChangesAsync(
-        Guid calendarId,
+        string providerCalendarId,
         string accessToken,
         string? cursor,
         CancellationToken ct = default)
     {
-        var url = BuildEventsUrl(calendarId, cursor);
+        var url = BuildEventsUrl(providerCalendarId, cursor);
 
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
@@ -75,14 +75,14 @@ internal sealed class GoogleCalendarSyncer : ICalendarSyncer
     }
 
     public async Task<string> CreateBlockAsync(
-        Guid calendarId,
+        string providerCalendarId,
         string accessToken,
         string title,
         DateTime start,
         DateTime end,
         CancellationToken ct = default)
     {
-        var url = BuildEventsUrl(calendarId);
+        var url = BuildEventsUrl(providerCalendarId);
         var body = BuildEventBody(title, start, end);
 
         using var request = new HttpRequestMessage(HttpMethod.Post, url)
@@ -107,7 +107,7 @@ internal sealed class GoogleCalendarSyncer : ICalendarSyncer
     }
 
     public async Task UpdateBlockAsync(
-        Guid calendarId,
+        string providerCalendarId,
         string accessToken,
         string blockId,
         string title,
@@ -115,7 +115,7 @@ internal sealed class GoogleCalendarSyncer : ICalendarSyncer
         DateTime end,
         CancellationToken ct = default)
     {
-        var url = $"{BuildEventsUrl(calendarId)}/{Uri.EscapeDataString(blockId)}";
+        var url = $"{BuildEventsUrl(providerCalendarId)}/{Uri.EscapeDataString(blockId)}";
         var body = BuildEventBody(title, start, end);
 
         using var request = new HttpRequestMessage(HttpMethod.Patch, url)
@@ -135,12 +135,12 @@ internal sealed class GoogleCalendarSyncer : ICalendarSyncer
     }
 
     public async Task DeleteBlockAsync(
-        Guid calendarId,
+        string providerCalendarId,
         string accessToken,
         string blockId,
         CancellationToken ct = default)
     {
-        var url = $"{BuildEventsUrl(calendarId)}/{Uri.EscapeDataString(blockId)}";
+        var url = $"{BuildEventsUrl(providerCalendarId)}/{Uri.EscapeDataString(blockId)}";
 
         using var request = new HttpRequestMessage(HttpMethod.Delete, url);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
@@ -155,10 +155,10 @@ internal sealed class GoogleCalendarSyncer : ICalendarSyncer
         }
     }
 
-    private string BuildEventsUrl(Guid calendarId, string? syncToken = null)
+    private string BuildEventsUrl(string providerCalendarId, string? syncToken = null)
     {
         var path = _options.CalendarEventsPathTemplate
-            .Replace("{calendarId}", Uri.EscapeDataString(calendarId.ToString()));
+            .Replace("{calendarId}", Uri.EscapeDataString(providerCalendarId));
         var query = HttpUtility.ParseQueryString(string.Empty);
 
         if (syncToken is not null)

@@ -40,4 +40,14 @@ internal sealed class ConnectionService : IConnectionService
 
         return accessToken;
     }
+
+    public async Task<string> GetProviderCalendarIdAsync(Guid calendarId, CancellationToken ct = default)
+    {
+        var calendar = await _db.Calendars
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Id == calendarId, ct)
+            ?? throw new InvalidOperationException($"Calendar {calendarId} not found.");
+
+        return calendar.ProviderCalendarId;
+    }
 }
