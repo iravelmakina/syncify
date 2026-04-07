@@ -34,8 +34,16 @@ internal sealed class SyncRuleRepository : ISyncRuleRepository
 
     public async Task UpdateAsync(SyncRule rule, CancellationToken ct = default)
     {
-        var entity = rule.ToEntity();
-        _db.SyncRules.Update(entity);
+        var entity = await _db.SyncRules
+            .FirstOrDefaultAsync(x => x.Id == rule.Id, ct);
+
+        if (entity == null)
+            throw new InvalidOperationException($"Sync rule {rule.Id} not found.");
+
+        var updated = rule.ToEntity();
+       
+        _db.Entry(entity).CurrentValues.SetValues(updated);
+
         await _db.SaveChangesAsync(ct);
     }
 
