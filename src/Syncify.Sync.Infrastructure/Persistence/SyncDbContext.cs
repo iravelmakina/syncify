@@ -3,7 +3,7 @@ using Syncify.Sync.Infrastructure.Persistence.Entities;
 
 namespace Syncify.Sync.Infrastructure.Persistence;
 
-public class SyncDbContext : DbContext
+internal sealed class SyncDbContext : DbContext
 {
     public DbSet<SyncRuleEntity> SyncRules => Set<SyncRuleEntity>();
     public DbSet<SyncedEventEntity> SyncedEvents => Set<SyncedEventEntity>();

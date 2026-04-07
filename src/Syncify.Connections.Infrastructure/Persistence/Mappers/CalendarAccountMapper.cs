@@ -6,7 +6,7 @@ using Syncify.Shared;
 
 namespace Syncify.Connections.Infrastructure.Persistence.Mappers;
 
-public static class CalendarAccountMapper
+internal static class CalendarAccountMapper
 {
     public static CalendarAccount ToDomain(this CalendarAccountEntity entity)
     {
@@ -22,7 +22,7 @@ public static class CalendarAccountMapper
             entity.Id,
             new UserId(entity.UserId),
             Enum.Parse<Provider>(entity.Provider, ignoreCase: true),
-            new OAuthCredential(entity.RefreshTokenEnc, entity.TokenExpiresAt.UtcDateTime),
+            new OAuthCredential(entity.RefreshToken, entity.TokenExpiresAt.UtcDateTime),
             calendars,
             Enum.Parse<ConnectionStatus>(entity.Status, ignoreCase: true),
             entity.CreatedAt.UtcDateTime,
@@ -36,7 +36,7 @@ public static class CalendarAccountMapper
             Id = account.Id,
             UserId = account.UserId.Value,
             Provider = account.Provider.ToString(),
-            RefreshTokenEnc = account.Credential.RefreshToken,
+            RefreshToken = account.Credential.RefreshToken,
             TokenExpiresAt = account.Credential.TokenExpiresAt,
             Status = account.Status.ToString(),
             CreatedAt = account.CreatedAt,

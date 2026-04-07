@@ -7,7 +7,7 @@ using Syncify.Connections.Infrastructure.Google.Models;
 
 namespace Syncify.Connections.Infrastructure.Google;
 
-public sealed class GoogleCalendarProvider : ICalendarProvider
+internal sealed class GoogleCalendarProvider : ICalendarProvider
 {
     private readonly HttpClient _httpClient;
     private readonly GoogleOptions _options;

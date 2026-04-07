@@ -4,7 +4,7 @@ using Syncify.Sync.Infrastructure.Persistence.Entities;
 
 namespace Syncify.Sync.Infrastructure.Persistence.Configurations;
 
-public class SyncRuleConfiguration : IEntityTypeConfiguration<SyncRuleEntity>
+internal sealed class SyncRuleConfiguration : IEntityTypeConfiguration<SyncRuleEntity>
 {
     public void Configure(EntityTypeBuilder<SyncRuleEntity> builder)
     {

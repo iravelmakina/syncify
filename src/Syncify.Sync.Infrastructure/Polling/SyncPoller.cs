@@ -3,10 +3,11 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Syncify.Sync.Application.Ports;
+using Syncify.Sync.Application.Services;
 
 namespace Syncify.Sync.Infrastructure.Polling;
 
-public sealed class SyncPoller : BackgroundService
+internal sealed class SyncPoller : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<SyncPoller> _logger;
@@ -45,6 +46,7 @@ public sealed class SyncPoller : BackgroundService
     {
         using var scope = _serviceProvider.CreateScope();
         var ruleRepository = scope.ServiceProvider.GetRequiredService<ISyncRuleRepository>();
+        var syncExecutor = scope.ServiceProvider.GetRequiredService<SyncExecutor>();
 
         var activeRules = await ruleRepository.ListActiveAsync(ct);
 
@@ -56,9 +58,8 @@ public sealed class SyncPoller : BackgroundService
                 break;
 
             try
-            { 
-                // call usecase
-                _logger.LogInformation("Polling rule {RuleId}", rule.Id);
+            {
+                await syncExecutor.ExecuteRuleAsync(rule.Id, ct);
             }
             catch (Exception ex)
             {

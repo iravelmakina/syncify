@@ -5,7 +5,7 @@ using Syncify.Sync.Infrastructure.Persistence.Mappers;
 
 namespace Syncify.Sync.Infrastructure.Persistence;
 
-public class SyncedEventRepository : ISyncedEventRepository
+internal sealed class SyncedEventRepository : ISyncedEventRepository
 {
     private readonly SyncDbContext _db;
 

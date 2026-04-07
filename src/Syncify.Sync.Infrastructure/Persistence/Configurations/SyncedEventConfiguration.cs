@@ -4,7 +4,7 @@ using Syncify.Sync.Infrastructure.Persistence.Entities;
 
 namespace Syncify.Sync.Infrastructure.Persistence.Configurations;
 
-public class SyncedEventConfiguration : IEntityTypeConfiguration<SyncedEventEntity>
+internal sealed class SyncedEventConfiguration : IEntityTypeConfiguration<SyncedEventEntity>
 {
     public void Configure(EntityTypeBuilder<SyncedEventEntity> builder)
     {

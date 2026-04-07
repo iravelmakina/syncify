@@ -4,7 +4,7 @@ using Syncify.Connections.Infrastructure.Persistence.Entities;
 
 namespace Syncify.Connections.Infrastructure.Persistence.Configurations;
 
-public class CalendarAccountConfiguration : IEntityTypeConfiguration<CalendarAccountEntity>
+internal sealed class CalendarAccountConfiguration : IEntityTypeConfiguration<CalendarAccountEntity>
 {
     public void Configure(EntityTypeBuilder<CalendarAccountEntity> builder)
     {
@@ -24,7 +24,7 @@ public class CalendarAccountConfiguration : IEntityTypeConfiguration<CalendarAcc
             .HasColumnName("provider")
             .IsRequired();
 
-        builder.Property(x => x.RefreshTokenEnc)
+        builder.Property(x => x.RefreshToken)
             .HasColumnName("refresh_token_enc")
             .IsRequired();
 
