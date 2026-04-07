@@ -5,7 +5,7 @@ using Syncify.Connections.Application.Ports;
 
 namespace Syncify.Connections.Infrastructure.Security;
 
-public sealed class TokenEncryptor : ITokenEncryptor
+internal sealed class TokenEncryptor : ITokenEncryptor
 {
     private readonly byte[] _key;
 

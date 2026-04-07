@@ -1,6 +1,6 @@
 namespace Syncify.Sync.Infrastructure.Persistence.Entities;
 
-public class SyncedEventEntity
+internal sealed class SyncedEventEntity
 {
     public Guid Id { get; set; }
     public Guid SyncRuleId { get; set; }

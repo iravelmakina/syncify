@@ -1,6 +1,6 @@
 namespace Syncify.Sync.Infrastructure.Persistence.Entities;
 
-public class SyncRuleEntity
+internal sealed class SyncRuleEntity
 {
     public Guid Id { get; set; }
     public Guid UserId { get; set; }

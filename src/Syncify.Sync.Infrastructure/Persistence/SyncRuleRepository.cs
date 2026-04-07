@@ -7,7 +7,7 @@ using Syncify.Sync.Infrastructure.Persistence.Mappers;
 
 namespace Syncify.Sync.Infrastructure.Persistence;
 
-public class SyncRuleRepository : ISyncRuleRepository
+internal sealed class SyncRuleRepository : ISyncRuleRepository
 {
     private readonly SyncDbContext _db;
 

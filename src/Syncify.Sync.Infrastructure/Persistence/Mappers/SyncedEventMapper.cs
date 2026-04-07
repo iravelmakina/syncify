@@ -3,7 +3,7 @@ using Syncify.Sync.Infrastructure.Persistence.Entities;
 
 namespace Syncify.Sync.Infrastructure.Persistence.Mappers;
 
-public static class SyncedEventMapper
+internal static class SyncedEventMapper
 {
     public static SyncedEventMapping ToDto(this SyncedEventEntity entity)
     {
