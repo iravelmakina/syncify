@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Text.Json;
 using Syncify.Shared;
 using Syncify.Sync.Domain.Aggregates;
@@ -27,8 +26,8 @@ public static class SyncRuleMapper
             JsonSerializer.Deserialize<FilterPolicy>(entity.FilterPolicyJson, JsonOptions)!,
             Enum.Parse<SyncRuleStatus>(entity.Status),
             entity.SyncCursor,
-            entity.CreatedAt,
-            entity.UpdatedAt);
+            entity.CreatedAt.UtcDateTime,
+            entity.UpdatedAt.UtcDateTime);
     }
 
     public static SyncRuleEntity ToEntity(this SyncRule rule)

@@ -12,7 +12,7 @@ public static class SyncedEventMapper
             entity.SyncRuleId,
             entity.SourceEventId,
             entity.TargetBlockId,
-            entity.SourceUpdatedAt);
+            entity.SourceUpdatedAt.UtcDateTime);
     }
 
     public static SyncedEventEntity ToEntity(this SyncedEventMapping mapping)

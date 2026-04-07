@@ -6,7 +6,7 @@ public class SyncedEventEntity
     public Guid SyncRuleId { get; set; }
     public string SourceEventId { get; set; } = string.Empty;
     public string TargetBlockId { get; set; } = string.Empty;
-    public DateTime SourceUpdatedAt { get; set; }
+    public DateTimeOffset SourceUpdatedAt { get; set; }
 
     public SyncRuleEntity SyncRule { get; set; } = null!;
 }

@@ -11,6 +11,6 @@ public class SyncRuleEntity
     public string FilterPolicyJson { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
     public string? SyncCursor { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset UpdatedAt { get; set; }
 }
