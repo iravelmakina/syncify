@@ -1,6 +1,7 @@
 using MediatR;
 using Syncify.Connections.Application.Ports;
-using Syncify.Shared;
+using Syncify.Shared.Errors;
+using Syncify.Shared.Results;
 
 namespace Syncify.Connections.Application.Commands.RevokeConnection;
 

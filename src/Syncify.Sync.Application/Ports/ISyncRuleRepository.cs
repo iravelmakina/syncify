@@ -8,6 +8,7 @@ public interface ISyncRuleRepository
     Task<SyncRule?> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task CreateAsync(SyncRule rule, CancellationToken ct = default);
     Task UpdateAsync(SyncRule rule, CancellationToken ct = default);
-    Task<IReadOnlyList<SyncRule>> ListByUserAsync(UserId userId, CancellationToken ct = default);
+    Task<IReadOnlyList<SyncRule>> ListByUserAsync(
+        UserId userId, CancellationToken ct = default);
     Task<IReadOnlyList<SyncRule>> ListActiveAsync(CancellationToken ct = default);
 }

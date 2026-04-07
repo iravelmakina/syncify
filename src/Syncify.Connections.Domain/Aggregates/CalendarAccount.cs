@@ -1,6 +1,7 @@
 using Syncify.Connections.Domain.Enums;
 using Syncify.Connections.Domain.ValueObjects;
 using Syncify.Shared;
+using Syncify.Shared.Errors;
 
 namespace Syncify.Connections.Domain.Aggregates;
 
@@ -111,4 +112,4 @@ public sealed class CalendarAccount
             UpdatedAt = updatedAt
         };
     }
-    }
+}

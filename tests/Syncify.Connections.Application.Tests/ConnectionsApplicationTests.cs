@@ -1,10 +1,8 @@
-using MediatR;
 using Moq;
 using Syncify.Connections.Application.Commands.CompleteOAuth;
 using Syncify.Connections.Application.Commands.RevokeConnection;
-using Syncify.Connections.Application.DTOs;
+using Syncify.Connections.Application.Models;
 using Syncify.Connections.Application.Ports;
-using Syncify.Connections.Application.Queries.ListCalendars;
 using Syncify.Connections.Domain.Aggregates;
 using Syncify.Connections.Domain.Enums;
 using Syncify.Connections.Domain.ValueObjects;
@@ -14,7 +12,8 @@ namespace Syncify.Connections.Application.Tests;
 
 public class ConnectionsApplicationTests
 {
-    private static readonly UserId TestUser = UserId.New();
+    private static readonly 
+        UserId TestUser = UserId.New();
 
     private readonly Mock<ICalendarAccountRepository> _repositoryMock = new();
     private readonly Mock<IOAuthProvider> _oAuthProviderMock = new();

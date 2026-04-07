@@ -1,5 +1,6 @@
 using MediatR;
-using Syncify.Shared;
+using Syncify.Shared.Errors;
+using Syncify.Shared.Results;
 
 namespace Syncify.Api.Behaviors;
 

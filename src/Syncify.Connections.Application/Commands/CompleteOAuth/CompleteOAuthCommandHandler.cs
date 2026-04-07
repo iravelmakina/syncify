@@ -3,7 +3,7 @@ using Syncify.Connections.Application.Ports;
 using Syncify.Connections.Domain.Aggregates;
 using Syncify.Connections.Domain.Enums;
 using Syncify.Connections.Domain.ValueObjects;
-using Syncify.Shared;
+using Syncify.Shared.Results;
 
 namespace Syncify.Connections.Application.Commands.CompleteOAuth;
 

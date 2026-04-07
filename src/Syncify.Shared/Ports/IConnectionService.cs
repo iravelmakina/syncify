@@ -1,4 +1,6 @@
-namespace Syncify.Shared;
+using Syncify.Shared.Enums;
+
+namespace Syncify.Shared.Ports;
 
 public interface IConnectionService
 {

@@ -1,5 +1,5 @@
 using MediatR;
-using Syncify.Shared;
+using Syncify.Shared.Results;
 
 namespace Syncify.Sync.Application.Commands.ExecuteSyncRule;
 

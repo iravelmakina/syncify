@@ -1,6 +1,6 @@
 using MediatR;
-using Syncify.Shared;
-using Syncify.Sync.Application.DTOs;
+using Syncify.Shared.Results;
+using Syncify.Sync.Application.Responses;
 
 namespace Syncify.Sync.Application.Queries.GetSyncRule;
 

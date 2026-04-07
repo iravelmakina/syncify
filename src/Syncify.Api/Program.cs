@@ -1,22 +1,14 @@
-using System.Text.Json.Serialization.Metadata;
+using Scalar.AspNetCore;
 using Syncify.Api.Behaviors;
 using Syncify.Api.Endpoints;
 using Syncify.Api.Middleware;
 using Syncify.Api.OpenApi;
+using Syncify.Connections.Application.Ports;
 using Syncify.Connections.Infrastructure;
-using Syncify.Sync.Infrastructure.Serialization;
-using Scalar.AspNetCore;
+using Syncify.Sync.Application.Ports;
 using Syncify.Sync.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
-
-builder.Services.ConfigureHttpJsonOptions(options =>
-{
-    options.SerializerOptions.TypeInfoResolver = new DefaultJsonTypeInfoResolver
-    {
-        Modifiers = { FilterCriterionJsonConfig.Configure }
-    };
-});
 
 builder.Services.AddOpenApi(options =>
 {
@@ -28,8 +20,8 @@ builder.Services.AddProblemDetails();
 
 builder.Services.AddMediatR(cfg =>
 {
-    cfg.RegisterServicesFromAssembly(typeof(Syncify.Connections.Application.Ports.ICalendarAccountRepository).Assembly);
-    cfg.RegisterServicesFromAssembly(typeof(Syncify.Sync.Application.Ports.ISyncRuleRepository).Assembly);
+    cfg.RegisterServicesFromAssembly(typeof(ICalendarAccountRepository).Assembly);
+    cfg.RegisterServicesFromAssembly(typeof(ISyncRuleRepository).Assembly);
     cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));
     cfg.AddOpenBehavior(typeof(DomainExceptionBehavior<,>));
 });

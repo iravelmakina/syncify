@@ -1,5 +1,6 @@
 using MediatR;
-using Syncify.Shared;
+using Syncify.Shared.Ports;
+using Syncify.Shared.Results;
 using Syncify.Sync.Application.Ports;
 using Syncify.Sync.Domain.Aggregates;
 

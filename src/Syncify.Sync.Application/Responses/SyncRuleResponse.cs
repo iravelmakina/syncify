@@ -1,4 +1,4 @@
-namespace Syncify.Sync.Application.DTOs;
+namespace Syncify.Sync.Application.Responses;
 
 public sealed record SyncRuleResponse(
     Guid Id,

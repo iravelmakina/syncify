@@ -1,7 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Syncify.Connections.Application.Ports;
 using Syncify.Connections.Infrastructure.Persistence;
-using Syncify.Shared;
+using Syncify.Shared.Enums;
+using Syncify.Shared.Ports;
 
 namespace Syncify.Connections.Infrastructure.Services;
 

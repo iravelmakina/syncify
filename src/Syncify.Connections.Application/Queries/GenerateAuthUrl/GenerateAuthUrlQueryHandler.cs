@@ -1,6 +1,6 @@
 using MediatR;
 using Syncify.Connections.Application.Ports;
-using Syncify.Shared;
+using Syncify.Shared.Results;
 
 namespace Syncify.Connections.Application.Queries.GenerateAuthUrl;
 

@@ -1,4 +1,4 @@
-using Syncify.Shared;
+using Syncify.Shared.Enums;
 
 namespace Syncify.Connections.Infrastructure.Google;
 

@@ -1,19 +1,22 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
-using Syncify.Shared;
+using Syncify.Shared.Errors;
+using Syncify.Shared.Ports;
+using Syncify.Shared.Results;
+using Syncify.Sync.Application.Contracts;
 using Syncify.Sync.Application.DTOs;
 using Syncify.Sync.Application.Ports;
 using Syncify.Sync.Domain.Aggregates;
 using Syncify.Sync.Domain.Enums;
 
-namespace Syncify.Sync.Application.Services;
+namespace Syncify.Sync.Application.Execution;
 
 public sealed class SyncExecutor(
     ISyncRuleRepository ruleRepository,
     IConnectionService connectionService,
     ICalendarSyncer calendarSyncer,
     ISyncedEventRepository syncedEventRepository,
-    ILogger<SyncExecutor> logger)
+    ILogger<SyncExecutor> logger) : ISyncExecutor
 {
     public async Task<Result<Unit>> ExecuteRuleAsync(Guid ruleId, CancellationToken ct = default)
     {

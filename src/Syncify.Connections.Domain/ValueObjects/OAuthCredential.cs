@@ -1,4 +1,4 @@
-using Syncify.Shared;
+using Syncify.Shared.Errors;
 
 namespace Syncify.Connections.Domain.ValueObjects;
 

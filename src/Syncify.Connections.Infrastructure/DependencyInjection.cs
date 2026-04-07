@@ -8,7 +8,7 @@ using Syncify.Connections.Infrastructure.Google;
 using Syncify.Connections.Infrastructure.Persistence;
 using Syncify.Connections.Infrastructure.Security;
 using Syncify.Connections.Infrastructure.Services;
-using Syncify.Shared;
+using Syncify.Shared.Ports;
 
 namespace Syncify.Connections.Infrastructure;
 

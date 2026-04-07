@@ -1,4 +1,4 @@
-using Syncify.Connections.Application.DTOs;
+using Syncify.Connections.Application.Models;
 
 namespace Syncify.Connections.Application.Ports;
 

@@ -1,10 +1,13 @@
-namespace Syncify.Shared;
+using Syncify.Shared.Errors;
 
-public class Result<T>
+namespace Syncify.Shared.Results;
+
+public class Result<T> : IResultContract
 {
     public bool IsSuccess { get; }
     public T? Value { get; }
     public ApplicationError? Error { get; }
+    object? IResultContract.ValueObject => Value;
 
     private Result(T value) { IsSuccess = true; Value = value; }
     private Result(ApplicationError error) { IsSuccess = false; Error = error; }

@@ -2,6 +2,8 @@ using Syncify.Connections.Domain.Aggregates;
 using Syncify.Connections.Domain.Enums;
 using Syncify.Connections.Domain.ValueObjects;
 using Syncify.Shared;
+using Syncify.Shared.Enums;
+using Syncify.Shared.Errors;
 
 namespace Syncify.Connections.Domain.Tests;
 

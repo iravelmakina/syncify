@@ -1,4 +1,5 @@
-using Syncify.Shared;
+using Syncify.Shared.Enums;
+using Syncify.Shared.Errors;
 
 namespace Syncify.Sync.Domain.ValueObjects;
 

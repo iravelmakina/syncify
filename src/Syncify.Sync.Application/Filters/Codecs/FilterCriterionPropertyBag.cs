@@ -1,9 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
-
-using Syncify.Shared.Enums;
 using Syncify.Shared.Errors;
-using Syncify.Shared.Ports;
 
 namespace Syncify.Sync.Application.Filters.Codecs;
 

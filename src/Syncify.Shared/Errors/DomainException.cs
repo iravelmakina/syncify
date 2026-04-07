@@ -1,4 +1,4 @@
-namespace Syncify.Shared;
+namespace Syncify.Shared.Errors;
 
 public enum DomainErrorCode
 {

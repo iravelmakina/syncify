@@ -1,19 +1,12 @@
-using System.Text.Json;
 using Syncify.Shared;
 using Syncify.Sync.Domain.Aggregates;
 using Syncify.Sync.Domain.Enums;
-using Syncify.Sync.Domain.ValueObjects;
 using Syncify.Sync.Infrastructure.Persistence.Entities;
 
 namespace Syncify.Sync.Infrastructure.Persistence.Mappers;
 
 internal static class SyncRuleMapper
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-    };
-
     public static SyncRule ToDomain(this SyncRuleEntity entity)
     {
         return SyncRule.Reconstitute(
@@ -23,7 +16,7 @@ internal static class SyncRuleMapper
             entity.TargetCalendarId,
             entity.CopyTitle,
             entity.CustomTitle,
-            JsonSerializer.Deserialize<FilterPolicy>(entity.FilterPolicyJson, JsonOptions)!,
+            StoredFilterPolicyMapper.Deserialize(entity.FilterPolicyJson),
             Enum.Parse<SyncRuleStatus>(entity.Status, ignoreCase: true),
             entity.SyncCursor,
             entity.CreatedAt.UtcDateTime,
@@ -40,7 +33,7 @@ internal static class SyncRuleMapper
             TargetCalendarId = rule.TargetCalendarId,
             CopyTitle = rule.CopyTitle,
             CustomTitle = rule.CustomTitle,
-            FilterPolicyJson = JsonSerializer.Serialize(rule.FilterPolicy, JsonOptions),
+            FilterPolicyJson = StoredFilterPolicyMapper.Serialize(rule.FilterPolicy),
             Status = rule.Status.ToString(),
             SyncCursor = rule.SyncCursor,
             CreatedAt = rule.CreatedAt,
