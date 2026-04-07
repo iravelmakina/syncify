@@ -22,7 +22,7 @@ internal sealed class GoogleCalendarProvider : ICalendarProvider
         string accessToken,
         CancellationToken ct = default)
     {
-        var url = _options.CalendarListEndpoint;
+        var url = _options.CalendarListPath;
 
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);

@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using System.Web;
+using Google.Apis.Auth;
 using Microsoft.Extensions.Options;
 using Syncify.Connections.Application.DTOs;
 using Syncify.Connections.Application.Ports;
@@ -20,7 +21,7 @@ internal sealed class GoogleOAuthProvider : IOAuthProvider
 
     public string GenerateAuthUrl()
     {
-        var builder = new UriBuilder(_options.AuthEndpoint);
+        var builder = new UriBuilder(new Uri(new Uri(_options.AccountsBaseUrl, UriKind.Absolute), _options.OAuthAuthPath));
         var query = HttpUtility.ParseQueryString(string.Empty);
 
         query["client_id"] = _options.ClientId;
@@ -46,10 +47,13 @@ internal sealed class GoogleOAuthProvider : IOAuthProvider
         };
 
         var tokenResponse = await RequestTokenAsync(payload, ct);
+        var identity = await ValidateIdTokenAsync(tokenResponse.IdToken);
 
         return new OAuthResult(
             tokenResponse.RefreshToken ?? throw new InvalidOperationException("Google did not return a refresh token."),
-            DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn));
+            DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn),
+            identity.ProviderAccountId,
+            identity.Email);
     }
 
     public async Task<string> RefreshAccessTokenAsync(string refreshToken, CancellationToken ct = default)
@@ -71,7 +75,7 @@ internal sealed class GoogleOAuthProvider : IOAuthProvider
         CancellationToken ct)
     {
         using var content = new FormUrlEncodedContent(payload);
-        var response = await _httpClient.PostAsync(_options.TokenEndpoint, content, ct);
+        var response = await _httpClient.PostAsync(_options.OAuthTokenPath, content, ct);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -83,4 +87,34 @@ internal sealed class GoogleOAuthProvider : IOAuthProvider
         return await response.Content.ReadFromJsonAsync<GoogleTokenResponse>(ct)
             ?? throw new InvalidOperationException("Failed to deserialize Google token response.");
     }
+
+    private async Task<GoogleIdentity> ValidateIdTokenAsync(string? idToken)
+    {
+        if (string.IsNullOrWhiteSpace(idToken))
+            throw new InvalidOperationException("Google did not return an id_token.");
+
+        try
+        {
+            var payload = await GoogleJsonWebSignature.ValidateAsync(
+                idToken,
+                new GoogleJsonWebSignature.ValidationSettings
+                {
+                    Audience = [_options.ClientId]
+                });
+
+            if (string.IsNullOrWhiteSpace(payload.Subject))
+                throw new InvalidOperationException("Google id_token is missing the sub claim.");
+
+            if (string.IsNullOrWhiteSpace(payload.Email))
+                throw new InvalidOperationException("Google id_token is missing the email claim.");
+
+            return new GoogleIdentity(payload.Subject, payload.Email);
+        }
+        catch (InvalidJwtException ex)
+        {
+            throw new InvalidOperationException("Google returned an invalid id_token.", ex);
+        }
+    }
+
+    private sealed record GoogleIdentity(string ProviderAccountId, string Email);
 }
