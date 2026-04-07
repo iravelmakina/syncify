@@ -9,16 +9,13 @@ internal sealed class ConnectionService : IConnectionService
 {
     private readonly ConnectionsDbContext _db;
     private readonly IOAuthProvider _oauthProvider;
-    private readonly ITokenEncryptor _encryptor;
 
     public ConnectionService(
         ConnectionsDbContext db,
-        IOAuthProvider oauthProvider,
-        ITokenEncryptor encryptor)
+        IOAuthProvider oauthProvider)
     {
         _db = db;
         _oauthProvider = oauthProvider;
-        _encryptor = encryptor;
     }
 
     public async Task<CalendarAccess> GetCalendarAccessAsync(Guid calendarId, CancellationToken ct = default)
@@ -39,8 +36,7 @@ internal sealed class ConnectionService : IConnectionService
             .FirstOrDefaultAsync(c => c.Id == calendarId, ct)
             ?? throw new InvalidOperationException($"Calendar {calendarId} not found.");
 
-        var decryptedRefreshToken = _encryptor.Decrypt(calendar.Account.RefreshTokenEnc);
-        var accessToken = await _oauthProvider.RefreshAccessTokenAsync(decryptedRefreshToken, ct);
+        var accessToken = await _oauthProvider.RefreshAccessTokenAsync(calendar.Account.RefreshToken, ct);
 
         return accessToken;
     }

@@ -24,7 +24,7 @@ internal sealed class CalendarAccountConfiguration : IEntityTypeConfiguration<Ca
             .HasColumnName("provider")
             .IsRequired();
 
-        builder.Property(x => x.RefreshTokenEnc)
+        builder.Property(x => x.RefreshToken)
             .HasColumnName("refresh_token_enc")
             .IsRequired();
 
