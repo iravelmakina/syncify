@@ -11,7 +11,7 @@ using Syncify.Sync.Infrastructure.Google.Models;
 
 namespace Syncify.Sync.Infrastructure.Google;
 
-public sealed class GoogleCalendarSyncer : ICalendarSyncer
+internal sealed class GoogleCalendarSyncer : ICalendarSyncer
 {
     private readonly HttpClient _httpClient;
     private readonly GoogleSyncOptions _options;

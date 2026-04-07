@@ -7,7 +7,7 @@ using Syncify.Connections.Infrastructure.Google.Models;
 
 namespace Syncify.Connections.Infrastructure.Google;
 
-public sealed class GoogleOAuthProvider : IOAuthProvider
+internal sealed class GoogleOAuthProvider : IOAuthProvider
 {
     private readonly HttpClient _httpClient;
     private readonly GoogleOptions _options;
