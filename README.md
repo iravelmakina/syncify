@@ -85,6 +85,7 @@ docker build -t syncify .
 
 # Run (pass config via env vars)
 docker run -p 8080:8080 \
+  --env-file .env \
   -e ConnectionStrings__DefaultConnection="Host=host.docker.internal;Port=5432;Database=syncify;Username=syncify;Password=syncify" \
   -e Google__ClientId="your-client-id" \
   -e Google__ClientSecret="your-client-secret" \
@@ -103,6 +104,7 @@ dotnet test syncify.sln
 # Run specific test project
 dotnet test tests/Syncify.Connections.Domain.Tests
 dotnet test tests/Syncify.Sync.Domain.Tests
+dotnet test tests/Syncify.Connections.Application.Tests
 dotnet test tests/Syncify.Sync.Application.Tests
 dotnet test tests/Syncify.Api.Tests          # requires Docker (Testcontainers)
 ```
@@ -186,3 +188,13 @@ curl -s $BASE/health
 2. Open a PR against `main` when ready for review
 3. Domain and application tests must pass before merge
 4. Integration tests (`Syncify.Api.Tests`) run against a real PostgreSQL via Testcontainers
+
+PRs: https://github.com/iravelmakina/syncify/pulls?q=is%3Apr+is%3Aclosed
+
+## Programming sessions
+
+| Date | Focus | What was done |
+|---|---|---|
+| 28 March | Architecture brainstorming and design | Bounded context split, aggregate design, ADRs |
+| 5 April | Practice 4 | Infrastructure, API endpoints, domain/application tests |
+| 7 April | Practice 4 refinement and testing | Code review fixes, migrations, Docker, README |
