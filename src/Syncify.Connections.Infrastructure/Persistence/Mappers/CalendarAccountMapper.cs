@@ -6,7 +6,7 @@ using Syncify.Shared;
 
 namespace Syncify.Connections.Infrastructure.Persistence.Mappers;
 
-public static class CalendarAccountMapper
+internal static class CalendarAccountMapper
 {
     public static CalendarAccount ToDomain(this CalendarAccountEntity entity)
     {

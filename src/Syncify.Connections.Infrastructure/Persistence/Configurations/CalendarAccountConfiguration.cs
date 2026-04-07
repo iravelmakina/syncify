@@ -4,7 +4,7 @@ using Syncify.Connections.Infrastructure.Persistence.Entities;
 
 namespace Syncify.Connections.Infrastructure.Persistence.Configurations;
 
-public class CalendarAccountConfiguration : IEntityTypeConfiguration<CalendarAccountEntity>
+internal sealed class CalendarAccountConfiguration : IEntityTypeConfiguration<CalendarAccountEntity>
 {
     public void Configure(EntityTypeBuilder<CalendarAccountEntity> builder)
     {

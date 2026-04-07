@@ -7,7 +7,7 @@ using Syncify.Shared;
 
 namespace Syncify.Connections.Infrastructure.Persistence;
 
-public class CalendarAccountRepository : ICalendarAccountRepository
+internal sealed class CalendarAccountRepository : ICalendarAccountRepository
 {
     private readonly ConnectionsDbContext _db;
 

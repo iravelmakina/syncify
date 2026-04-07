@@ -5,7 +5,7 @@ using Syncify.Shared;
 
 namespace Syncify.Connections.Infrastructure.Services;
 
-public sealed class ConnectionService : IConnectionService
+internal sealed class ConnectionService : IConnectionService
 {
     private readonly ConnectionsDbContext _db;
     private readonly IOAuthProvider _oauthProvider;

@@ -3,7 +3,7 @@ using Syncify.Connections.Infrastructure.Persistence.Entities;
 
 namespace Syncify.Connections.Infrastructure.Persistence;
 
-public class ConnectionsDbContext : DbContext
+internal sealed class ConnectionsDbContext : DbContext
 {
     public DbSet<CalendarAccountEntity> CalendarAccounts => Set<CalendarAccountEntity>();
     public DbSet<CalendarEntity> Calendars => Set<CalendarEntity>();

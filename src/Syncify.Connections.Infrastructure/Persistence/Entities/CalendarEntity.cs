@@ -1,6 +1,6 @@
 namespace Syncify.Connections.Infrastructure.Persistence.Entities;
 
-public class CalendarEntity
+internal sealed class CalendarEntity
 {
     public Guid Id { get; set; }
     public Guid AccountId { get; set; }
