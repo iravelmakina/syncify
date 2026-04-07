@@ -18,7 +18,7 @@ Practice 4 requires at least 3 domain rules per module, enforced inside the doma
 - Status transitions must be explicit — no arbitrary state jumps
 - Cross-module interaction (Sync calls Connections facade for `CalendarAccess`, see ADR-002) must be reflected in the aggregate API
 
-### [Entity Relationsip Diagram](../diagrams/entity-relationship.mmd)
+### [Entity Relationship Diagram](../diagrams/entity-relationship.mmd)
 
 ## CalendarAccount aggregate
 
@@ -28,10 +28,10 @@ Practice 4 requires at least 3 domain rules per module, enforced inside the doma
 stateDiagram-v2
     [*] --> Active : OAuth completed
     Active --> Expired : token expires
-    Expired --> Active : token refreshed
+    Expired --> Active : reconnect
     Active --> Revoked : user revokes
     Expired --> Revoked : user revokes
-    Revoked --> [*] : terminal
+    Revoked --> Active : reconnect
 ```
 
 ### Domain rules
@@ -39,10 +39,11 @@ stateDiagram-v2
 | # | Rule | Enforced by |
 |---|------|-------------|
 | C1 | Token expiry drives status — if `OAuthCredential.ExpiresAt` is past and status is `Active`, transition to `Expired` | `CheckExpiry()` on any read/mutation |
-| C2 | `Revoked` is terminal — cannot transition to `Active` or `Expired` | `Revoke()`, all transition methods |
-| C3 | Credential refresh requires `Active` or `Expired` status | `RefreshCredential(newToken)` |
+| C2 | Reconnecting the same provider account replaces stored credentials and returns the account to `Active` from `Active`, `Expired`, or `Revoked` | `Reconnect(newCredential)` |
+| C3 | `Revoke()` is idempotency-protected — an already revoked account cannot be revoked again | `Revoke()` |
 | C4 | Calendar list refresh requires `Active` status | `RefreshCalendars(calendars)` |
-| C5 | Max connections per user per provider (e.g., 5) | Application layer (needs repo query) |
+| C5 | Each connected provider account has a stable provider-scoped identity (`ProviderAccountId`) and descriptive email captured at OAuth completion | `Create()`, `Reconstitute()` |
+| C6 | Max connections per user per provider (e.g., 5) | Application layer (needs repo query) |
 
 ### Value objects
 
@@ -50,13 +51,18 @@ stateDiagram-v2
 - **CalendarInfo** — providerCalendarID non-empty, valid `CalendarAccess` (see ADR-002). Immutable. Persisted in `calendars` table with its own uuid PK.
 - **Provider** — enum: `Google`, `Outlook` (future).
 
+### Identity note
+
+`CalendarAccount` represents one external provider account, not one calendar. For Google, identity is the validated OpenID Connect `sub` claim returned in `id_token`. A single `CalendarAccount` may own many calendars, and reconnecting one Google account must not affect the user's other connected Google accounts.
+
 ### Facade contract
 
-```go
-type ConnectionService interface {
-    GetCalendarAccess(ctx, calendarID uuid) (CalendarAccess, error)
-    ListCalendars(ctx, accountID uuid) ([]CalendarInfo, error)
-    GetFreshAccessToken(ctx, calendarID uuid) (string, error)
+```csharp
+public interface IConnectionService
+{
+    Task<CalendarAccess> GetCalendarAccessAsync(Guid calendarId, CancellationToken ct = default);
+    Task<IReadOnlyList<CalendarInfo>> ListCalendarsAsync(Guid accountId, CancellationToken ct = default);
+    Task<string> GetFreshAccessTokenAsync(Guid calendarId, CancellationToken ct = default);
 }
 ```
 
@@ -89,12 +95,12 @@ stateDiagram-v2
 
 ### Value objects
 
-- **FilterPolicy** — stored as JSONB. Contains `excludes` (string array: `"all_day"`, `"declined"`, extensible), `timeWindow` (optional: startHour, endHour, weekdays), `keywords` (optional string array). Self-validates TimeWindow (rule S4) and keyword count cap (e.g., 20). Cross-validation against `CalendarAccess` (rules S2, S3) is the aggregate's job. Adding a new filter type = new Go struct field + JSON key, zero migrations.
+- **FilterPolicy** — stored as JSONB. Contains `excludes` (string array: `"all_day"`, `"declined"`, extensible), `timeWindow` (optional: startHour, endHour, weekdays), `keywords` (optional string array). Self-validates TimeWindow (rule S4) and keyword count cap (e.g., 20). Cross-validation against `CalendarAccess` (rules S2, S3) is the aggregate's job. Adding a new filter type = new C# field/property + JSON key, zero migrations.
 - **TimeWindow** — startHour (0–23), endHour (0–23), weekdays (non-empty []int). Self-validates S4. Embedded within FilterPolicy.
 
 ### Persistence strategy (hybrid)
 
-Stable fields (`copy_title`, `custom_title`, `status`, `last_sync_token`) are stored as columns with DB-level constraints. The volatile filter configuration is stored as a single `filter_policy jsonb` column. Rationale: filter types will grow (new excludes, new dimensions), and each new filter should require only a Go struct change — not a migration. Title config is two stable fields with no expected growth, so columns give us DB constraints and schema visibility.
+Stable fields (`copy_title`, `custom_title`, `status`, `last_sync_token`) are stored as columns with DB-level constraints. The volatile filter configuration is stored as a single `filter_policy jsonb` column. Rationale: filter types will grow (new excludes, new dimensions), and each new filter should require only a C# model change — not a migration. Title config is two stable fields with no expected growth, so columns give us DB constraints and schema visibility.
 
 ## Decision
 
@@ -112,7 +118,7 @@ Both aggregates enforce invariants through constructor validation and guarded mu
 ### Accepted Downsides
 
 - Reading a `SyncRule` from the database doesn't reveal what access level it was validated against. Acceptable — access is always checked live from Connections.
-- C5 (max connections per provider) lives in the application layer because it requires a repo query. Documented to avoid confusion about aggregate boundary.
+- C6 (max connections per provider) lives in the application layer because it requires a repo query. Documented to avoid confusion about aggregate boundary.
 
 ---
 

@@ -12,7 +12,7 @@ CalendarSync needs two distinct identity concepts: (1) knowing *who the user is*
 
 ## Decision Drivers
 
-- Practice 4 has no UI — browser-based OAuth redirects don't apply
+- Practice 4 has no first-party UI, but we still need a browser-based Google consent flow initiated by the API
 - Both modules need a `UserID` to scope data ownership, but neither needs user profile data (name, email, avatar)
 - Calendar OAuth tokens are sensitive secrets with rotation and expiry logic — they belong in the Connections module
 - Authentication will evolve: fake in Practice 4, API Gateway in Practice 5, possibly JWT in later practices
@@ -69,7 +69,9 @@ Since the Connections module already handles OAuth with Google, extend it to als
 We decided for **Option B — Shared UserID, no user entity** because neither module has domain logic that depends on user attributes. Authentication is a cross-cutting infrastructure concern that belongs in the API/gateway layer, not in the domain.
 
 
-For practice 4, we use Google's "installed application" OAuth flow. The Google Cloud project is only needed to register OAuth client credentials (client ID + secret).
+For Practice 4, the API exposes an auth URL endpoint and an OAuth completion endpoint. The user opens Google's consent screen in a browser, authorizes one Google account, and sends the returned authorization code back to the API. The Google Cloud project is only needed to register OAuth client credentials (client ID + secret).
+
+To support multiple Google accounts per app user, the Connections module identifies external accounts by the Google OpenID Connect `sub` claim from the validated `id_token`, not by provider name or email. Email is stored as descriptive display data only.
 
 
 ### Authentication evolution path
@@ -94,12 +96,15 @@ Only the `refresh_token` is persisted — encrypted at rest using AES-256-GCM wi
 
 Encryption/decryption is a repository concern in `connections/infrastructure/`, not a domain concern. The `OAuthCredential` value object in the domain holds the decrypted refresh token in memory — it never sees ciphertext.
 
+The `id_token` is not persisted. It is validated during OAuth completion using Google's token validation library and used only to extract the stable provider account ID (`sub`) and email for the connected account.
+
 ### Expected Benefits
 
 - Zero boilerplate for a concept with no domain logic
 - Authentication strategy evolves in the API layer only — domain code is stable across practices
 - Calendar OAuth is cleanly owned by Connections module, decoupled from user identity
-- CLI-style OAuth flow works without a UI, with real Google tokens and real API calls
+- Browser-assisted OAuth flow works without a first-party UI, with real Google tokens and real API calls
+- One app user can connect multiple Google accounts, and reconnect maps to the correct existing account via provider account identity
 
 ### Accepted Downsides
 

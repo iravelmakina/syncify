@@ -157,10 +157,8 @@ internal sealed class GoogleCalendarSyncer : ICalendarSyncer
 
     private string BuildEventsUrl(Guid calendarId, string? syncToken = null)
     {
-        var baseUrl = _options.CalendarEventsEndpoint
+        var path = _options.CalendarEventsPathTemplate
             .Replace("{calendarId}", Uri.EscapeDataString(calendarId.ToString()));
-
-        var builder = new UriBuilder(baseUrl);
         var query = HttpUtility.ParseQueryString(string.Empty);
 
         if (syncToken is not null)
@@ -173,8 +171,10 @@ internal sealed class GoogleCalendarSyncer : ICalendarSyncer
             query["singleEvents"] = "true";
         }
 
-        builder.Query = query.ToString();
-        return builder.Uri.ToString();
+        var queryString = query.ToString();
+        return string.IsNullOrEmpty(queryString)
+            ? path
+            : $"{path}?{queryString}";
     }
 
     private static string BuildEventBody(string title, DateTime start, DateTime end)

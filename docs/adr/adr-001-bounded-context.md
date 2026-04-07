@@ -29,7 +29,7 @@ Split by what they integrate with. **Connections** owns OAuth tokens, provider c
 - Connections is the natural Practice 5 extraction target (external API deps, different scaling profile)
 - Practice 6 events are obvious: `ConnectionRevoked`, `AccessRoleChanged` → Sync re-validates affected rules
 - Practice 7 Saga: `CreateSyncRule` → verify source accessible → verify target writable → validate capability → create active rule; `ResumeSyncRule` follows the same multi-step validation
-- In Go, Google API client dependency stays isolated in one module
+- Google API client dependency stays isolated in one module
 
 **Cons:**
 - Connections domain layer is thinner than Sync Rules — mostly validation (token expiry, connection status) rather than rich business logic

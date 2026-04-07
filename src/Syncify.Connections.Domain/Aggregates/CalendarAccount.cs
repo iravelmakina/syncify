@@ -9,6 +9,8 @@ public sealed class CalendarAccount
     public Guid Id { get; private set; }
     public UserId UserId { get; private set; }
     public Provider Provider { get; private set; }
+    public string ProviderAccountId { get; private set; } = string.Empty;
+    public string Email { get; private set; } = string.Empty;
     public OAuthCredential Credential { get; private set; }
     public ConnectionStatus Status { get; private set; }
     public IReadOnlyList<CalendarInfo> Calendars => _calendars.AsReadOnly();
@@ -22,14 +24,23 @@ public sealed class CalendarAccount
     public static CalendarAccount Create(
         UserId userId,
         Provider provider,
+        string providerAccountId,
+        string email,
         OAuthCredential credential,
         DateTime utcNow)
     {
+        if (string.IsNullOrWhiteSpace(providerAccountId))
+            throw new DomainException("Provider account ID is required.");
+        if (string.IsNullOrWhiteSpace(email))
+            throw new DomainException("Email is required.");
+
         return new CalendarAccount
         {
             Id = Guid.NewGuid(),
             UserId = userId,
             Provider = provider,
+            ProviderAccountId = providerAccountId,
+            Email = email,
             Credential = credential,
             Status = ConnectionStatus.Active,
             _calendars = new List<CalendarInfo>(),
@@ -56,11 +67,8 @@ public sealed class CalendarAccount
         UpdatedAt = utcNow;
     }
     
-    public void RefreshCredential(OAuthCredential newCredential, DateTime utcNow)
+    public void Reconnect(OAuthCredential newCredential, DateTime utcNow)
     {
-        if (Status == ConnectionStatus.Revoked)
-            throw new DomainException("Cannot refresh credential on a revoked account.", DomainErrorCode.InvalidState);
-
         Credential = newCredential;
         Status = ConnectionStatus.Active;
         UpdatedAt = utcNow;
@@ -81,6 +89,8 @@ public sealed class CalendarAccount
         Guid id,
         UserId userId,
         Provider provider,
+        string providerAccountId,
+        string email,
         OAuthCredential credential,
         List<CalendarInfo> calendars,
         ConnectionStatus status,
@@ -92,6 +102,8 @@ public sealed class CalendarAccount
             Id = id,
             UserId = userId,
             Provider = provider,
+            ProviderAccountId = providerAccountId,
+            Email = email,
             Credential = credential,
             _calendars = calendars,
             Status = status,

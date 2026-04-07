@@ -15,6 +15,7 @@ public sealed class ListConnectionsQueryHandler(ICalendarAccountRepository repos
         var response = accounts.Select(a => new ConnectionResponse(
             a.Id,
             a.Provider.ToString(),
+            a.Email,
             a.Status.ToString(),
             a.CreatedAt)).ToList();
 

@@ -13,7 +13,13 @@ public class CalendarAccountTests
     private static CalendarAccount CreateActiveAccount(DateTime tokenExpiresAt)
     {
         var credential = new OAuthCredential("refresh-token-abc", tokenExpiresAt);
-        return CalendarAccount.Create(TestUser, Provider.Google, credential, Now);
+        return CalendarAccount.Create(
+            TestUser,
+            Provider.Google,
+            "google-account-123",
+            "user@example.com",
+            credential,
+            Now);
     }
     
     [Fact]
@@ -28,28 +34,28 @@ public class CalendarAccountTests
     }
     
     [Fact]
-    public void RevokedAccount_RefreshCredential_Throws()
+    public void RevokedAccount_Reconnect_TransitionsToActive()
     {
         var account = CreateActiveAccount(tokenExpiresAt: Now.AddHours(1));
         account.Revoke(Now);
 
         var newCredential = new OAuthCredential("new-refresh-token", Now.AddHours(2));
 
-        var ex = Assert.Throws<DomainException>(() =>
-            account.RefreshCredential(newCredential, Now));
+        account.Reconnect(newCredential, Now);
 
-        Assert.Equal(DomainErrorCode.InvalidState, ex.Code);
+        Assert.Equal(ConnectionStatus.Active, account.Status);
+        Assert.Equal(newCredential, account.Credential);
     }
     
     [Fact]
-    public void ExpiredAccount_RefreshCredential_TransitionsToActive()
+    public void ExpiredAccount_Reconnect_TransitionsToActive()
     {
         var account = CreateActiveAccount(tokenExpiresAt: Now.AddHours(-1));
         account.CheckExpiry(Now);
         Assert.Equal(ConnectionStatus.Expired, account.Status);
 
         var newCredential = new OAuthCredential("new-refresh-token", Now.AddHours(2));
-        account.RefreshCredential(newCredential, Now);
+        account.Reconnect(newCredential, Now);
 
         Assert.Equal(ConnectionStatus.Active, account.Status);
     }
