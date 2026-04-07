@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Syncify.Sync.Application.Ports;
+using Syncify.Sync.Application.Services;
 using Syncify.Sync.Infrastructure.Google;
 using Syncify.Sync.Infrastructure.Persistence;
 using Syncify.Sync.Infrastructure.Polling;
@@ -22,6 +23,7 @@ public static class DependencyInjection
 
         services.AddScoped<ISyncRuleRepository, SyncRuleRepository>();
         services.AddScoped<ISyncedEventRepository, SyncedEventRepository>();
+        services.AddScoped<SyncExecutor>();
 
         services.AddHttpClient<ICalendarSyncer, GoogleCalendarSyncer>();
         services.AddHostedService<SyncPoller>();

@@ -48,9 +48,8 @@ public sealed class GoogleOAuthProvider : IOAuthProvider
         var tokenResponse = await RequestTokenAsync(payload, ct);
 
         return new OAuthResult(
-            tokenResponse.AccessToken,
             tokenResponse.RefreshToken ?? throw new InvalidOperationException("Google did not return a refresh token."),
-            DateTimeOffset.UtcNow.AddSeconds(tokenResponse.ExpiresIn));
+            DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn));
     }
 
     public async Task<string> RefreshAccessTokenAsync(string refreshToken, CancellationToken ct = default)
