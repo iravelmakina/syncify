@@ -143,12 +143,19 @@ dotnet test tests/Syncify.Sync.Application.Tests
 dotnet test tests/Syncify.Api.Tests          # requires Docker (Testcontainers)
 ```
 
+## OpenAPI
+
+After running the app, access Scalar UI at:
+```
+http://localhost:8080/scalar/v1
+```
+
+> All endpoints expect an `X-User-ID` header (UUID) for user identification.
+
 ## API Examples
 
-All endpoints expect an `X-User-ID` header (UUID) for user identification.
-
 ```bash
-BASE=http://localhost:5030
+BASE=http://localhost:8080
 USER_ID="00000000-0000-0000-0000-000000000001"
 
 # --- Connections ---
