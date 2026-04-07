@@ -1,13 +1,27 @@
+using System.Text.Json.Serialization.Metadata;
 using Syncify.Api.Behaviors;
 using Syncify.Api.Endpoints;
 using Syncify.Api.Middleware;
+using Syncify.Api.OpenApi;
 using Syncify.Connections.Infrastructure;
+using Syncify.Sync.Infrastructure.Serialization;
 using Scalar.AspNetCore;
 using Syncify.Sync.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddOpenApi();
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.TypeInfoResolver = new DefaultJsonTypeInfoResolver
+    {
+        Modifiers = { FilterCriterionJsonConfig.Configure }
+    };
+});
+
+builder.Services.AddOpenApi(options =>
+{
+    options.AddOperationTransformer<UserIdHeaderTransformer>();
+});
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();

@@ -30,6 +30,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Syncify.Connections.Applica
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Syncify.Sync.Application.Tests", "tests\Syncify.Sync.Application.Tests\Syncify.Sync.Application.Tests.csproj", "{08F090B1-03D5-42C0-ABCB-46D1B2906A4B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Syncify.Sync.Infrastructure.Tests", "tests\Syncify.Sync.Infrastructure.Tests\Syncify.Sync.Infrastructure.Tests.csproj", "{C6B3248D-5304-46D4-B94F-EA567F8D4BB3}"
+EndProject
 Global
     GlobalSection(SolutionConfigurationPlatforms) = preSolution
         Debug|Any CPU = Debug|Any CPU
@@ -101,6 +103,11 @@ Global
         {08F090B1-03D5-42C0-ABCB-46D1B2906A4B}.Debug|Any CPU.Build.0 = Debug|Any CPU
         {08F090B1-03D5-42C0-ABCB-46D1B2906A4B}.Release|Any CPU.ActiveCfg = Release|Any CPU
         {08F090B1-03D5-42C0-ABCB-46D1B2906A4B}.Release|Any CPU.Build.0 = Release|Any CPU
+
+        {C6B3248D-5304-46D4-B94F-EA567F8D4BB3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {C6B3248D-5304-46D4-B94F-EA567F8D4BB3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {C6B3248D-5304-46D4-B94F-EA567F8D4BB3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {C6B3248D-5304-46D4-B94F-EA567F8D4BB3}.Release|Any CPU.Build.0 = Release|Any CPU
     EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{654B7E0F-40A0-4B47-87AA-86FBB9F04EA0} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
@@ -116,5 +123,6 @@ Global
 		{4BC9579A-4F7D-4F1B-85E3-7CB1AAFF871D} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{5EE0D135-14D8-44BA-989B-3FCA2D4531D8} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{08F090B1-03D5-42C0-ABCB-46D1B2906A4B} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{C6B3248D-5304-46D4-B94F-EA567F8D4BB3} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal
