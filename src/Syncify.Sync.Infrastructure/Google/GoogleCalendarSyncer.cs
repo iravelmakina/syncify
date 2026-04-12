@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.Json;
 using System.Web;
 using Microsoft.Extensions.Options;
-using Syncify.Sync.Application.Contracts;
+using Syncify.Sync.Application.Models;
 using Syncify.Sync.Application.Ports;
 using Syncify.Sync.Infrastructure.Google.Models;
 

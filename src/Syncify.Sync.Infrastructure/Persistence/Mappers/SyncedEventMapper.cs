@@ -1,4 +1,4 @@
-using Syncify.Sync.Application.DTOs;
+using Syncify.Sync.Application.Models;
 using Syncify.Sync.Infrastructure.Persistence.Entities;
 
 namespace Syncify.Sync.Infrastructure.Persistence.Mappers;

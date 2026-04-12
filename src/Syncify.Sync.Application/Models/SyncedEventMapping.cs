@@ -1,4 +1,4 @@
-namespace Syncify.Sync.Application.DTOs;
+namespace Syncify.Sync.Application.Models;
 
 public sealed record SyncedEventMapping(
     Guid Id,
@@ -7,3 +7,4 @@ public sealed record SyncedEventMapping(
     string TargetBlockId,
     DateTime SourceStart,
     DateTime SourceUpdatedAt);
+    

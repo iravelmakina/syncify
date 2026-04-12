@@ -1,4 +1,4 @@
-using Syncify.Sync.Application.Contracts;
+using Syncify.Sync.Application.Models;
 
 namespace Syncify.Sync.Application.Ports;
 

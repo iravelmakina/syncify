@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Syncify.Sync.Application.DTOs;
+using Syncify.Sync.Application.Models;
 using Syncify.Sync.Application.Ports;
 using Syncify.Sync.Infrastructure.Persistence.Mappers;
 
