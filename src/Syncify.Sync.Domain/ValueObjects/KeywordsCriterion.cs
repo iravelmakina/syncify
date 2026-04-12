@@ -23,4 +23,10 @@ public sealed record KeywordsCriterion : IFilterCriterion
 
         Keywords = keywords;
     }
+
+    public bool Matches(EventSnapshot snapshot)
+    {
+        if (snapshot.Title is null) return false;
+        return Keywords.Any(k => snapshot.Title.Contains(k, StringComparison.OrdinalIgnoreCase));
+    }
 }

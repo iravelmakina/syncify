@@ -7,4 +7,6 @@ public interface IFilterCriterion
 {
     [JsonIgnore]
     CalendarAccess MinimumAccess { get; }
+
+    bool Matches(EventSnapshot snapshot);
 }

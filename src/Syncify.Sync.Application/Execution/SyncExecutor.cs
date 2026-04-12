@@ -8,6 +8,7 @@ using Syncify.Sync.Application.DTOs;
 using Syncify.Sync.Application.Ports;
 using Syncify.Sync.Domain.Aggregates;
 using Syncify.Sync.Domain.Enums;
+using Syncify.Sync.Domain.ValueObjects;
 
 namespace Syncify.Sync.Application.Execution;
 
@@ -86,8 +87,21 @@ public sealed class SyncExecutor(
         CalendarEventDto ev,
         CancellationToken ct)
     {
-        var title = rule.CopyTitle && ev.Title is not null ? ev.Title : rule.CustomTitle;
         var mapping = await syncedEventRepository.GetByRuleAndSourceEventAsync(rule.Id, ev.Id, ct);
+
+        if (!rule.FilterPolicy.Matches(new EventSnapshot(ev.Title, ev.Start, ev.End)))
+        {
+            if (mapping is not null)
+            {
+                await calendarSyncer.DeleteBlockAsync(
+                    targetProviderCalendarId, targetToken, mapping.TargetBlockId, ct);
+                await syncedEventRepository.DeleteAsync(mapping.Id, ct);
+            }
+
+            return;
+        }
+
+        var title = rule.CopyTitle && ev.Title is not null ? ev.Title : rule.CustomTitle;
 
         if (mapping is not null)
         {

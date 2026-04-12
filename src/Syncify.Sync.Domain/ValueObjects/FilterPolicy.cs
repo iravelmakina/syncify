@@ -21,4 +21,7 @@ public sealed record FilterPolicy(IReadOnlyList<IFilterCriterion> Criteria)
 
     public bool HasCriterion<T>() where T : class, IFilterCriterion
         => Criteria.OfType<T>().Any();
+
+    public bool Matches(EventSnapshot snapshot)
+        => Criteria.All(c => c.Matches(snapshot));
 }
