@@ -17,8 +17,6 @@ public sealed class SyncExecutor(
     ISyncedEventRepository syncedEventRepository,
     ILogger<SyncExecutor> logger) : ISyncExecutor
 {
-    private static readonly TimeSpan CleanupBuffer = TimeSpan.FromMinutes(5);
-
     public async Task<Result<Unit>> ExecuteRuleAsync(Guid ruleId, CancellationToken ct = default)
     {
         logger.LogInformation("Starting sync execution for rule {RuleId}", ruleId);
@@ -78,7 +76,7 @@ public sealed class SyncExecutor(
         string targetToken,
         CancellationToken ct)
     {
-        var cutoff = DateTime.UtcNow - CleanupBuffer;
+        var cutoff = DateTime.UtcNow;
 
         var staleMappings = await syncedEventRepository.ListByRuleSinceAsync(rule.Id, cutoff, ct);
         if (staleMappings.Count == 0) return;
