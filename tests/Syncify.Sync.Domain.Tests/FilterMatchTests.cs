@@ -87,10 +87,10 @@ public class FilterMatchTests
     }
 
     [Fact]
-    public void TimeWindow_AtEndBoundary_ReturnsTrue()
+    public void TimeWindow_AtEndBoundary_ReturnsFalse()
     {
         var criterion = new TimeWindowCriterion(9, 11, [DayOfWeek.Monday]);
-        Assert.True(criterion.Matches(Snap(new DateTime(2026, 4, 6, 11, 0, 0))));
+        Assert.False(criterion.Matches(Snap(new DateTime(2026, 4, 6, 11, 0, 0))));
     }
 
     // --- FilterPolicy ---

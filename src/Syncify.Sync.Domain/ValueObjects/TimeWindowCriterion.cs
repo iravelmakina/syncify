@@ -35,15 +35,20 @@ public sealed record TimeWindowCriterion : IFilterCriterion
     public bool Matches(EventSnapshot snapshot)
     {
         var start = snapshot.Start;
+        var end = snapshot.End;
 
         if (snapshot.TimeZoneId is not null)
         {
             var tz = TimeZoneInfo.FindSystemTimeZoneById(snapshot.TimeZoneId);
             start = TimeZoneInfo.ConvertTimeFromUtc(start, tz);
+            end = TimeZoneInfo.ConvertTimeFromUtc(end, tz);
         }
 
+        var windowStart = start.Date.AddHours(StartHour);
+        var windowEnd = start.Date.AddHours(EndHour);
+
         return Weekdays.Contains(start.DayOfWeek)
-            && start.Hour >= StartHour
-            && start.Hour <= EndHour;
+            && start >= windowStart
+            && end <= windowEnd;
     }
 }
