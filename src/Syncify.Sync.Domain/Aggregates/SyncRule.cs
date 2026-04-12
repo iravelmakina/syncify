@@ -15,6 +15,7 @@ public sealed class SyncRule
     public bool CopyTitle { get; private set; }
     public string CustomTitle { get; private set; }
     public FilterPolicy FilterPolicy { get; private set; }
+    public int LookbackDays { get; private set; }
     public SyncRuleStatus Status { get; private set; }
     public string? SyncCursor { get; private set; }
     public DateTime CreatedAt { get; private set; }
@@ -35,13 +36,17 @@ public sealed class SyncRule
         bool copyTitle,
         string? customTitle,
         FilterPolicy filterPolicy,
+        int lookbackDays,
         DateTime utcNow)
     {
         if (sourceCalendarId == targetCalendarId)
             throw new DomainException("Source and target must reference different calendars.");
-        
+
         if (string.IsNullOrWhiteSpace(customTitle))
             throw new DomainException("Custom title must not be empty.");
+
+        if (lookbackDays <= 0)
+            throw new DomainException("Lookback days must be positive.");
 
         if (tgtAccess != CalendarAccess.ReadWrite)
             throw new DomainException("Target calendar must have ReadWrite access.", DomainErrorCode.AccessViolation);
@@ -57,6 +62,7 @@ public sealed class SyncRule
             CopyTitle = copyTitle,
             CustomTitle = customTitle ?? "busy",
             FilterPolicy = filterPolicy,
+            LookbackDays = lookbackDays,
             Status = SyncRuleStatus.Active,
             SyncCursor = null,
             CreatedAt = utcNow,
@@ -72,6 +78,7 @@ public sealed class SyncRule
         bool copyTitle,
         string customTitle,
         FilterPolicy filterPolicy,
+        int lookbackDays,
         SyncRuleStatus status,
         string? syncCursor,
         DateTime createdAt,
@@ -86,6 +93,7 @@ public sealed class SyncRule
             CopyTitle = copyTitle,
             CustomTitle = customTitle,
             FilterPolicy = filterPolicy,
+            LookbackDays = lookbackDays,
             Status = status,
             SyncCursor = syncCursor,
             CreatedAt = createdAt,

@@ -26,9 +26,10 @@ internal sealed class GoogleCalendarSyncer : ICalendarSyncer
         string providerCalendarId,
         string accessToken,
         string? cursor,
+        int lookbackDays,
         CancellationToken ct = default)
     {
-        var url = BuildEventsUrl(providerCalendarId, cursor);
+        var url = BuildEventsUrl(providerCalendarId, cursor, lookbackDays);
 
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
@@ -155,7 +156,7 @@ internal sealed class GoogleCalendarSyncer : ICalendarSyncer
         }
     }
 
-    private string BuildEventsUrl(string providerCalendarId, string? syncToken = null)
+    private string BuildEventsUrl(string providerCalendarId, string? syncToken = null, int lookbackDays = 7)
     {
         var path = _options.CalendarEventsPathTemplate
             .Replace("{calendarId}", Uri.EscapeDataString(providerCalendarId));
@@ -167,7 +168,7 @@ internal sealed class GoogleCalendarSyncer : ICalendarSyncer
         }
         else
         {
-            query["timeMin"] = DateTime.UtcNow.AddDays(-_options.InitialSyncLookbackDays).ToString("o");
+            query["timeMin"] = DateTime.UtcNow.AddDays(-lookbackDays).ToString("o");
             query["singleEvents"] = "true";
         }
 

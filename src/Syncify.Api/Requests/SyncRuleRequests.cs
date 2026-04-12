@@ -8,7 +8,8 @@ public sealed record CreateSyncRuleRequest(
     Guid TargetCalendarId,
     bool CopyTitle,
     string CustomTitle,
-    FilterPolicyRequest FilterPolicy);
+    FilterPolicyRequest FilterPolicy,
+    int LookbackDays = 7);
 
 public sealed record UpdateTitleRequest(bool CopyTitle, string CustomTitle);
 

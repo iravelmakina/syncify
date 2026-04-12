@@ -50,7 +50,7 @@ public sealed class SyncExecutor(
             var sourceProviderCalendarId = await connectionService.GetProviderCalendarIdAsync(rule.SourceCalendarId, ct);
 
             var result = await calendarSyncer.FetchChangesAsync(
-                sourceProviderCalendarId, sourceToken, rule.SyncCursor, ct);
+                sourceProviderCalendarId, sourceToken, rule.SyncCursor, rule.LookbackDays, ct);
 
             foreach (var eventId in result.DeletedEventIds)
                 await ProcessDeletionAsync(rule, targetProviderCalendarId, targetToken, eventId, ct);

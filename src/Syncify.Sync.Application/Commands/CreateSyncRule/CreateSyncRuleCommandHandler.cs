@@ -25,6 +25,7 @@ public sealed class CreateSyncRuleCommandHandler(
             command.CopyTitle,
             command.CustomTitle,
             command.FilterPolicy,
+            command.LookbackDays,
             DateTime.UtcNow);
 
         await repository.CreateAsync(rule, ct);

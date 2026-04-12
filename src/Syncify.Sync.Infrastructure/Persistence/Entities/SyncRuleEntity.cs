@@ -9,6 +9,7 @@ internal sealed class SyncRuleEntity
     public bool CopyTitle { get; set; }
     public string CustomTitle { get; set; } = string.Empty;
     public string FilterPolicyJson { get; set; } = string.Empty;
+    public int LookbackDays { get; set; }
     public string Status { get; set; } = string.Empty;
     public string? SyncCursor { get; set; }
     public DateTimeOffset CreatedAt { get; set; }

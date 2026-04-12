@@ -32,7 +32,8 @@ public static class SyncRuleEndpoints
                 request.TargetCalendarId,
                 request.CopyTitle,
                 request.CustomTitle,
-                request.FilterPolicy.ToDomain()), ct));
+                request.FilterPolicy.ToDomain(),
+                request.LookbackDays), ct));
 
         group.MapGet("/{id:guid}", async (Guid id, ISender mediator, CancellationToken ct) =>
         {
