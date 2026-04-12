@@ -1,4 +1,4 @@
-namespace Syncify.Sync.Application.Responses;
+namespace Syncify.Api.Responses;
 
 public sealed record SyncRuleResponse(
     Guid Id,

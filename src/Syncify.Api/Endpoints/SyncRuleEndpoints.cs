@@ -36,10 +36,16 @@ public static class SyncRuleEndpoints
                 request.FilterPolicy.ToDomain()), ct));
 
         group.MapGet("/{id:guid}", async (Guid id, ISender mediator, CancellationToken ct) =>
-            await mediator.Send(new GetSyncRuleQuery(id), ct));
+        {
+            var result = await mediator.Send(new GetSyncRuleQuery(id), ct);
+            return result.Map(rule => rule.ToResponse());
+        });
 
         group.MapGet("/", async (HttpContext context, ISender mediator, CancellationToken ct) =>
-            await mediator.Send(new ListSyncRulesQuery(context.GetUserId()), ct));
+        {
+            var result = await mediator.Send(new ListSyncRulesQuery(context.GetUserId()), ct);
+            return result.Map(rules => rules.ToResponse());
+        });
 
         group.MapPost("/{id:guid}/archive", async (Guid id, ISender mediator, CancellationToken ct) =>
             await mediator.Send(new ArchiveSyncRuleCommand(id), ct));

@@ -3,10 +3,13 @@ using Syncify.Connections.Application.Commands.CompleteOAuth;
 using Syncify.Connections.Application.Commands.RevokeConnection;
 using Syncify.Connections.Application.Models;
 using Syncify.Connections.Application.Ports;
+using Syncify.Connections.Application.Queries.ListCalendars;
+using Syncify.Connections.Application.Queries.ListConnections;
 using Syncify.Connections.Domain.Aggregates;
 using Syncify.Connections.Domain.Enums;
 using Syncify.Connections.Domain.ValueObjects;
 using Syncify.Shared;
+using Syncify.Shared.Enums;
 
 namespace Syncify.Connections.Application.Tests;
 

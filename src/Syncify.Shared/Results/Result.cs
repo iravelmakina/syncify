@@ -14,4 +14,7 @@ public class Result<T> : IResultContract
 
     public static Result<T> Success(T value) => new(value);
     public static Result<T> Failure(ApplicationError error) => new(error);
+
+    public Result<TOut> Map<TOut>(Func<T, TOut> selector)
+        => IsSuccess ? Result<TOut>.Success(selector(Value!)) : Result<TOut>.Failure(Error!);
 }
