@@ -7,7 +7,6 @@ using Syncify.Sync.Application.Commands.ArchiveSyncRule;
 using Syncify.Sync.Application.Commands.CreateSyncRule;
 using Syncify.Sync.Application.Commands.ExecuteSyncRule;
 using Syncify.Sync.Application.Commands.ResumeSyncRule;
-using Syncify.Sync.Application.Commands.UpdateFilter;
 using Syncify.Sync.Application.Commands.UpdateTitle;
 using Syncify.Sync.Application.Queries.GetSyncRule;
 using Syncify.Sync.Application.Queries.ListSyncRules;
@@ -52,13 +51,6 @@ public static class SyncRuleEndpoints
 
         group.MapPost("/{id:guid}/resume", async (Guid id, ISender mediator, CancellationToken ct) =>
             await mediator.Send(new ResumeSyncRuleCommand(id), ct));
-
-        group.MapPatch("/{id:guid}/filter", async (
-            Guid id,
-            UpdateFilterRequest request,
-            ISender mediator,
-            CancellationToken ct) =>
-            await mediator.Send(new UpdateFilterCommand(id, request.FilterPolicy.ToDomain()), ct));
 
         group.MapPatch("/{id:guid}/title", async (
             Guid id,

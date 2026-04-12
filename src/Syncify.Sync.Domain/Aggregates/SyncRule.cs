@@ -117,14 +117,6 @@ public sealed class SyncRule
         UpdatedAt = utcNow;
     }
     
-    public void UpdateFilter(FilterPolicy filter, CalendarAccess srcAccess, DateTime utcNow)
-    {
-        ValidateSourceAccessRestrictions(srcAccess, CopyTitle, filter);
-
-        FilterPolicy = filter;
-        UpdatedAt = utcNow;
-    }
-    
     public void UpdateTitle(bool copyTitle, string customTitle, CalendarAccess srcAccess, DateTime utcNow)
     {
         if (string.IsNullOrWhiteSpace(customTitle))
@@ -134,6 +126,7 @@ public sealed class SyncRule
 
         CopyTitle = copyTitle;
         CustomTitle = customTitle;
+        SyncCursor = null;
         UpdatedAt = utcNow;
     }
 

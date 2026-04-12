@@ -10,8 +10,6 @@ public sealed record CreateSyncRuleRequest(
     string CustomTitle,
     FilterPolicyRequest FilterPolicy);
 
-public sealed record UpdateFilterRequest(FilterPolicyRequest FilterPolicy);
-
 public sealed record UpdateTitleRequest(bool CopyTitle, string CustomTitle);
 
 public sealed record FilterPolicyRequest
