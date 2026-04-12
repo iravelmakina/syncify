@@ -140,7 +140,8 @@ public sealed class SyncExecutor(
                     targetProviderCalendarId, targetToken, mapping.TargetBlockId,
                     title, ev.Start, ev.End, ct);
 
-                await syncedEventRepository.UpdateAsync(mapping with { SourceUpdatedAt = ev.UpdatedAt }, ct);
+                await syncedEventRepository.UpdateAsync(
+                    mapping with { SourceStart = ev.Start, SourceUpdatedAt = ev.UpdatedAt }, ct);
             }
         }
         else

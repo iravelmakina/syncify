@@ -22,11 +22,22 @@ public sealed class ListCalendarsQueryHandler(
         account.CheckExpiry(DateTime.UtcNow);
 
         var accessToken = await oAuthProvider.RefreshAccessTokenAsync(account.Credential.RefreshToken, ct);
-        var calendars = await calendarProvider.ListCalendarsAsync(accessToken, ct);
+        var providerCalendars = await calendarProvider.ListCalendarsAsync(accessToken, ct);
+
+        var calendars = providerCalendars.Select(pc =>
+        {
+            var existing = account.Calendars.FirstOrDefault(
+                c => c.ProviderCalendarId == pc.ProviderCalendarId);
+            return new CalendarInfo(
+                existing?.Id ?? Guid.NewGuid(),
+                pc.ProviderCalendarId,
+                pc.Name,
+                pc.Access);
+        }).ToList();
 
         account.RefreshCalendars(calendars, DateTime.UtcNow);
         await repository.UpdateAsync(account, ct);
 
-        return Result<IReadOnlyList<CalendarInfo>>.Success(calendars);
+        return Result<IReadOnlyList<CalendarInfo>>.Success(account.Calendars);
     }
 }

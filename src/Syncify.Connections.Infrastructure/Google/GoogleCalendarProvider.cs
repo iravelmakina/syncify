@@ -1,8 +1,8 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Microsoft.Extensions.Options;
+using Syncify.Connections.Application.Models;
 using Syncify.Connections.Application.Ports;
-using Syncify.Connections.Domain.ValueObjects;
 using Syncify.Connections.Infrastructure.Google.Models;
 
 namespace Syncify.Connections.Infrastructure.Google;
@@ -18,7 +18,7 @@ internal sealed class GoogleCalendarProvider : ICalendarProvider
         _options = options.Value;
     }
 
-    public async Task<IReadOnlyList<CalendarInfo>> ListCalendarsAsync(
+    public async Task<IReadOnlyList<ProviderCalendar>> ListCalendarsAsync(
         string accessToken,
         CancellationToken ct = default)
     {
@@ -40,8 +40,7 @@ internal sealed class GoogleCalendarProvider : ICalendarProvider
             ?? throw new InvalidOperationException("Failed to deserialize Google Calendar list response.");
 
         return result.Items
-            .Select(item => new CalendarInfo(
-                Guid.NewGuid(),
+            .Select(item => new ProviderCalendar(
                 item.Id,
                 item.Summary ?? item.Id,
                 GoogleAccessRoleMapper.ToDomain(item.AccessRole)))
