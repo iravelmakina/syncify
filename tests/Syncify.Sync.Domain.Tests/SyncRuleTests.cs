@@ -24,7 +24,7 @@ public class SyncRuleTests
         return SyncRule.Create(
             TestUser, SourceCalId, TargetCalId,
             srcAccess, tgtAccess, copyTitle, customTitle,
-            filter ?? EmptyFilter, Now);
+            filter ?? EmptyFilter, 7, Now);
     }
 
     [Fact]
@@ -35,7 +35,7 @@ public class SyncRuleTests
         var ex = Assert.Throws<DomainException>(() =>
             SyncRule.Create(TestUser, calId, calId,
                 CalendarAccess.Read, CalendarAccess.ReadWrite,
-                false, "Busy", EmptyFilter, Now));
+                false, "Busy", EmptyFilter, 7, Now));
 
         Assert.Equal(DomainErrorCode.Validation, ex.Code);
     }

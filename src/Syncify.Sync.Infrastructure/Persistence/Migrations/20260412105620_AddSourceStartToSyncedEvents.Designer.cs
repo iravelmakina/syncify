@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Syncify.Sync.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using Syncify.Sync.Infrastructure.Persistence;
 namespace Syncify.Sync.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(SyncDbContext))]
-    partial class SyncDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260412105620_AddSourceStartToSyncedEvents")]
+    partial class AddSourceStartToSyncedEvents
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -45,10 +48,6 @@ namespace Syncify.Sync.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("jsonb")
                         .HasColumnName("filter_policy");
-
-                    b.Property<int>("LookbackDays")
-                        .HasColumnType("integer")
-                        .HasColumnName("lookback_days");
 
                     b.Property<Guid>("SourceCalendarId")
                         .HasColumnType("uuid")

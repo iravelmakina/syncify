@@ -3,8 +3,7 @@ using Microsoft.Extensions.Logging;
 using Syncify.Shared.Errors;
 using Syncify.Shared.Ports;
 using Syncify.Shared.Results;
-using Syncify.Sync.Application.Contracts;
-using Syncify.Sync.Application.DTOs;
+using Syncify.Sync.Application.Models;
 using Syncify.Sync.Application.Ports;
 using Syncify.Sync.Domain.Aggregates;
 using Syncify.Sync.Domain.Enums;
@@ -30,21 +29,27 @@ public sealed class SyncExecutor(
             return Result<Unit>.Failure(new ApplicationError.NotFound("SyncRule", ruleId));
         }
 
-        if (rule.Status != SyncRuleStatus.Active)
-        {
-            logger.LogWarning("SyncRule {RuleId} is not active (Status: {Status})", ruleId, rule.Status);
-            return Result<Unit>.Failure(new ApplicationError.Validation(["Only active rules can be executed."]));
-        }
-
         try
         {
-            var sourceToken = await connectionService.GetFreshAccessTokenAsync(rule.SourceCalendarId, ct);
             var targetToken = await connectionService.GetFreshAccessTokenAsync(rule.TargetCalendarId, ct);
-            var sourceProviderCalendarId = await connectionService.GetProviderCalendarIdAsync(rule.SourceCalendarId, ct);
             var targetProviderCalendarId = await connectionService.GetProviderCalendarIdAsync(rule.TargetCalendarId, ct);
 
+            if (rule.SyncCursor is null)
+            {
+                await CleanupFutureBlocksAsync(rule, targetProviderCalendarId, targetToken, ct);
+            }
+
+            if (rule.Status != SyncRuleStatus.Active)
+            {
+                logger.LogInformation("Sync skipped for {RuleId} with status {Status}", ruleId, rule.Status);
+                return Result<Unit>.Success(Unit.Value);
+            }
+
+            var sourceToken = await connectionService.GetFreshAccessTokenAsync(rule.SourceCalendarId, ct);
+            var sourceProviderCalendarId = await connectionService.GetProviderCalendarIdAsync(rule.SourceCalendarId, ct);
+
             var result = await calendarSyncer.FetchChangesAsync(
-                sourceProviderCalendarId, sourceToken, rule.SyncCursor, ct);
+                sourceProviderCalendarId, sourceToken, rule.SyncCursor, rule.LookbackDays, ct);
 
             foreach (var eventId in result.DeletedEventIds)
                 await ProcessDeletionAsync(rule, targetProviderCalendarId, targetToken, eventId, ct);
@@ -64,6 +69,30 @@ public sealed class SyncExecutor(
             logger.LogError(ex, "Error occurred during sync execution for rule {RuleId}", ruleId);
             throw;
         }
+    }
+
+    private async Task CleanupFutureBlocksAsync(
+        SyncRule rule,
+        string targetProviderCalendarId,
+        string targetToken,
+        CancellationToken ct)
+    {
+        var cutoff = DateTime.UtcNow;
+
+        var staleMappings = await syncedEventRepository.ListByRuleSinceAsync(rule.Id, cutoff, ct);
+        if (staleMappings.Count == 0) return;
+
+        logger.LogInformation(
+            "Cleaning up {Count} future blocks for rule {RuleId} (cutoff: {Cutoff})",
+            staleMappings.Count, rule.Id, cutoff);
+
+        foreach (var mapping in staleMappings)
+        {
+            await calendarSyncer.DeleteBlockAsync(
+                targetProviderCalendarId, targetToken, mapping.TargetBlockId, ct);
+        }
+
+        await syncedEventRepository.DeleteByRuleSinceAsync(rule.Id, cutoff, ct);
     }
 
     private async Task ProcessDeletionAsync(
@@ -121,7 +150,7 @@ public sealed class SyncExecutor(
                 title, ev.Start, ev.End, ct);
 
             await syncedEventRepository.CreateAsync(
-                new SyncedEventMapping(Guid.NewGuid(), rule.Id, ev.Id, blockId, ev.UpdatedAt), ct);
+                new SyncedEventMapping(Guid.NewGuid(), rule.Id, ev.Id, blockId, ev.Start, ev.UpdatedAt), ct);
         }
     }
 }

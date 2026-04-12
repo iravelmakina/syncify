@@ -11,4 +11,5 @@ public sealed record CreateSyncRuleCommand(
     Guid TargetCalendarId,
     bool CopyTitle,
     string CustomTitle,
-    FilterPolicy FilterPolicy) : IRequest<Result<Guid>>;
+    FilterPolicy FilterPolicy,
+    int LookbackDays = 7) : IRequest<Result<Guid>>;

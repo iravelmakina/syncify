@@ -28,6 +28,10 @@ internal sealed class SyncedEventConfiguration : IEntityTypeConfiguration<Synced
             .HasColumnName("target_block_id")
             .IsRequired();
 
+        builder.Property(x => x.SourceStart)
+            .HasColumnName("source_start")
+            .IsRequired();
+
         builder.Property(x => x.SourceUpdatedAt)
             .HasColumnName("source_updated_at")
             .IsRequired();

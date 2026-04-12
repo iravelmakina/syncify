@@ -1,4 +1,4 @@
-using Syncify.Sync.Application.DTOs;
+using Syncify.Sync.Application.Models;
 using Syncify.Sync.Infrastructure.Persistence.Entities;
 
 namespace Syncify.Sync.Infrastructure.Persistence.Mappers;
@@ -12,6 +12,7 @@ internal static class SyncedEventMapper
             entity.SyncRuleId,
             entity.SourceEventId,
             entity.TargetBlockId,
+            entity.SourceStart.UtcDateTime,
             entity.SourceUpdatedAt.UtcDateTime);
     }
 
@@ -23,6 +24,7 @@ internal static class SyncedEventMapper
             SyncRuleId = mapping.SyncRuleId,
             SourceEventId = mapping.SourceEventId,
             TargetBlockId = mapping.TargetBlockId,
+            SourceStart = mapping.SourceStart,
             SourceUpdatedAt = mapping.SourceUpdatedAt
         };
     }

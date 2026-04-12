@@ -41,6 +41,10 @@ internal sealed class SyncRuleConfiguration : IEntityTypeConfiguration<SyncRuleE
             .HasColumnType("jsonb")
             .IsRequired();
 
+        builder.Property(x => x.LookbackDays)
+            .HasColumnName("lookback_days")
+            .IsRequired();
+
         builder.Property(x => x.Status)
             .HasColumnName("status")
             .IsRequired();

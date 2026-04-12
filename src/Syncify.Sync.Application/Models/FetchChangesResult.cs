@@ -1,4 +1,4 @@
-namespace Syncify.Sync.Application.Contracts;
+namespace Syncify.Sync.Application.Models;
 
 public record FetchChangesResult(
     string? NewCursor,
