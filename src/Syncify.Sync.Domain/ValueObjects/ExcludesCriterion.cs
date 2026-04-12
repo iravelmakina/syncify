@@ -18,4 +18,10 @@ public sealed record ExcludesCriterion : IFilterCriterion
 
         Excludes = excludes;
     }
+
+    public bool Matches(EventSnapshot snapshot)
+    {
+        if (snapshot.Title is null) return true;
+        return !Excludes.Any(e => snapshot.Title.Contains(e, StringComparison.OrdinalIgnoreCase));
+    }
 }

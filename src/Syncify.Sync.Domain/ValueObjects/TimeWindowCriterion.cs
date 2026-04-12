@@ -31,4 +31,11 @@ public sealed record TimeWindowCriterion : IFilterCriterion
         EndHour = endHour;
         Weekdays = weekdays;
     }
+
+    public bool Matches(EventSnapshot snapshot)
+    {
+        return Weekdays.Contains(snapshot.Start.DayOfWeek)
+            && snapshot.Start.Hour >= StartHour
+            && snapshot.Start.Hour <= EndHour;
+    }
 }
