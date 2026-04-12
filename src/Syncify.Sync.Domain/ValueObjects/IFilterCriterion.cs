@@ -1,5 +1,5 @@
 using System.Text.Json.Serialization;
-using Syncify.Shared;
+using Syncify.Shared.Enums;
 
 namespace Syncify.Sync.Domain.ValueObjects;
 

@@ -3,6 +3,7 @@ using Syncify.Connections.Domain.Enums;
 using Syncify.Connections.Domain.ValueObjects;
 using Syncify.Connections.Infrastructure.Persistence.Entities;
 using Syncify.Shared;
+using Syncify.Shared.Enums;
 
 namespace Syncify.Connections.Infrastructure.Persistence.Mappers;
 

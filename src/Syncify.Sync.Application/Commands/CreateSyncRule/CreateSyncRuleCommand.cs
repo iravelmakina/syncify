@@ -1,5 +1,6 @@
 using MediatR;
 using Syncify.Shared;
+using Syncify.Shared.Results;
 using Syncify.Sync.Domain.ValueObjects;
 
 namespace Syncify.Sync.Application.Commands.CreateSyncRule;

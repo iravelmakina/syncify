@@ -1,21 +1,10 @@
-using System.Text.Json;
-using System.Text.Json.Serialization.Metadata;
 using Syncify.Sync.Domain.ValueObjects;
-using Syncify.Sync.Infrastructure.Serialization;
+using Syncify.Sync.Infrastructure.Persistence.Mappers;
 
 namespace Syncify.Sync.Infrastructure.Tests;
 
 public class FilterPolicySerializationTests
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        TypeInfoResolver = new DefaultJsonTypeInfoResolver
-        {
-            Modifiers = { FilterCriterionJsonConfig.Configure }
-        }
-    };
-
     [Fact]
     public void Serialize_PolymorphicCriteria_Works()
     {
@@ -27,7 +16,7 @@ public class FilterPolicySerializationTests
         };
         var policy = new FilterPolicy(criteria);
 
-        var json = JsonSerializer.Serialize(policy, JsonOptions);
+        var json = StoredFilterPolicyMapper.Serialize(policy);
 
         Assert.Contains("\"type\":\"keywords\"", json);
         Assert.Contains("\"type\":\"excludes\"", json);
@@ -57,9 +46,8 @@ public class FilterPolicySerializationTests
         }
         """;
 
-        var policy = JsonSerializer.Deserialize<FilterPolicy>(json, JsonOptions);
+        var policy = StoredFilterPolicyMapper.Deserialize(json);
 
-        Assert.NotNull(policy);
         Assert.Equal(2, policy.Criteria.Count);
 
         var keywords = Assert.IsType<KeywordsCriterion>(policy.Criteria[0]);

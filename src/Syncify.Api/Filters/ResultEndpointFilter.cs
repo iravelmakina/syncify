@@ -1,5 +1,6 @@
 using MediatR;
-using Syncify.Shared;
+using Syncify.Api.Mappers;
+using Syncify.Shared.Results;
 
 namespace Syncify.Api.Filters;
 
@@ -14,15 +15,12 @@ public sealed class ResultEndpointFilter : IEndpointFilter
         if (result is null)
             return Results.NoContent();
 
-        var type = result.GetType();
-        if (!type.IsGenericType || type.GetGenericTypeDefinition() != typeof(Result<>))
+        if (result is not IResultContract operationResult)
             return result;
 
-        var isSuccess = (bool)type.GetProperty(nameof(Result<object>.IsSuccess))!.GetValue(result)!;
-
-        if (isSuccess)
+        if (operationResult.IsSuccess)
         {
-            var value = type.GetProperty(nameof(Result<object>.Value))!.GetValue(result);
+            var value = operationResult.ValueObject;
 
             if (value is Unit)
                 return Results.NoContent();
@@ -30,15 +28,6 @@ public sealed class ResultEndpointFilter : IEndpointFilter
             return Results.Ok(value);
         }
 
-        var error = (ApplicationError)type.GetProperty(nameof(Result<object>.Error))!.GetValue(result)!;
-
-        return error switch
-        {
-            ApplicationError.NotFound e => Results.NotFound(new { error = $"{e.Resource} '{e.Id}' not found." }),
-            ApplicationError.Validation e => Results.UnprocessableEntity(new { errors = e.Errors }),
-            ApplicationError.Conflict e => Results.Conflict(new { error = e.Message }),
-            ApplicationError.Forbidden e => Results.Json(new { error = e.Message }, statusCode: StatusCodes.Status403Forbidden),
-            _ => Results.StatusCode(StatusCodes.Status500InternalServerError)
-        };
+        return ApplicationResultMapper.ToHttpResult(operationResult.Error!);
     }
 }

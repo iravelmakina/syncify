@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.Json;
 using System.Web;
 using Microsoft.Extensions.Options;
-using Syncify.Sync.Application.DTOs;
+using Syncify.Sync.Application.Contracts;
 using Syncify.Sync.Application.Ports;
 using Syncify.Sync.Infrastructure.Google.Models;
 
@@ -192,10 +192,10 @@ internal sealed class GoogleCalendarSyncer : ICalendarSyncer
     private static DateTime ParseDateTime(GoogleEventDateTime dt)
     {
         if (dt.DateTime is not null)
-            return System.DateTime.Parse(dt.DateTime).ToUniversalTime();
+            return DateTime.Parse(dt.DateTime).ToUniversalTime();
 
         if (dt.Date is not null)
-            return System.DateTime.Parse(dt.Date).ToUniversalTime();
+            return DateTime.Parse(dt.Date).ToUniversalTime();
 
         throw new InvalidOperationException("Google event has no dateTime or date.");
     }

@@ -1,4 +1,6 @@
 using Syncify.Shared;
+using Syncify.Shared.Enums;
+using Syncify.Shared.Errors;
 using Syncify.Sync.Domain.Aggregates;
 using Syncify.Sync.Domain.ValueObjects;
 

@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Syncify.Connections.Application.Ports;
 using Syncify.Connections.Domain.Aggregates;
-using Syncify.Connections.Domain.Enums;
 using Syncify.Connections.Infrastructure.Persistence.Mappers;
 using Syncify.Shared;
 

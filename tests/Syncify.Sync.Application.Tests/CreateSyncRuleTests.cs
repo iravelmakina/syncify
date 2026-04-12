@@ -1,5 +1,8 @@
 using Moq;
 using Syncify.Shared;
+using Syncify.Shared.Enums;
+using Syncify.Shared.Errors;
+using Syncify.Shared.Ports;
 using Syncify.Sync.Application.Commands.CreateSyncRule;
 using Syncify.Sync.Application.Ports;
 using Syncify.Sync.Domain.Aggregates;
@@ -49,9 +52,9 @@ public class CreateSyncRuleTests
         // Assert
         Assert.True(result.IsSuccess);
         _repositoryMock.Verify(x => x.CreateAsync(
-            It.Is<SyncRule>(r => 
-                r.UserId == userId && 
-                r.SourceCalendarId == srcId && 
+            It.Is<SyncRule>(r =>
+                r.UserId == userId &&
+                r.SourceCalendarId == srcId &&
                 r.TargetCalendarId == tgtId),
             It.IsAny<CancellationToken>()), Times.Once);
     }

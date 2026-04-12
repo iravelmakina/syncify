@@ -2,8 +2,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Syncify.Sync.Application.Execution;
 using Syncify.Sync.Application.Ports;
-using Syncify.Sync.Application.Services;
 
 namespace Syncify.Sync.Infrastructure.Polling;
 
@@ -46,7 +46,7 @@ internal sealed class SyncPoller : BackgroundService
     {
         using var scope = _serviceProvider.CreateScope();
         var ruleRepository = scope.ServiceProvider.GetRequiredService<ISyncRuleRepository>();
-        var syncExecutor = scope.ServiceProvider.GetRequiredService<SyncExecutor>();
+        var syncExecutor = scope.ServiceProvider.GetRequiredService<ISyncExecutor>();
 
         var activeRules = await ruleRepository.ListActiveAsync(ct);
 

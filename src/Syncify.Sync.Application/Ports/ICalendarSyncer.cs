@@ -1,4 +1,4 @@
-using Syncify.Sync.Application.DTOs;
+using Syncify.Sync.Application.Contracts;
 
 namespace Syncify.Sync.Application.Ports;
 

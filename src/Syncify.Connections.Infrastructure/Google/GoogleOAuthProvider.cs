@@ -2,7 +2,7 @@ using System.Net.Http.Json;
 using System.Web;
 using Google.Apis.Auth;
 using Microsoft.Extensions.Options;
-using Syncify.Connections.Application.DTOs;
+using Syncify.Connections.Application.Models;
 using Syncify.Connections.Application.Ports;
 using Syncify.Connections.Infrastructure.Google.Models;
 

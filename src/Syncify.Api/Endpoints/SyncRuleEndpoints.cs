@@ -1,6 +1,8 @@
 using MediatR;
 using Syncify.Api.Filters;
+using Syncify.Api.Mappers;
 using Syncify.Api.Middleware;
+using Syncify.Api.Requests;
 using Syncify.Sync.Application.Commands.ArchiveSyncRule;
 using Syncify.Sync.Application.Commands.CreateSyncRule;
 using Syncify.Sync.Application.Commands.ExecuteSyncRule;
@@ -9,7 +11,6 @@ using Syncify.Sync.Application.Commands.UpdateFilter;
 using Syncify.Sync.Application.Commands.UpdateTitle;
 using Syncify.Sync.Application.Queries.GetSyncRule;
 using Syncify.Sync.Application.Queries.ListSyncRules;
-using Syncify.Sync.Domain.ValueObjects;
 
 namespace Syncify.Api.Endpoints;
 
@@ -32,13 +33,19 @@ public static class SyncRuleEndpoints
                 request.TargetCalendarId,
                 request.CopyTitle,
                 request.CustomTitle,
-                request.FilterPolicy), ct));
+                request.FilterPolicy.ToDomain()), ct));
 
         group.MapGet("/{id:guid}", async (Guid id, ISender mediator, CancellationToken ct) =>
-            await mediator.Send(new GetSyncRuleQuery(id), ct));
+        {
+            var result = await mediator.Send(new GetSyncRuleQuery(id), ct);
+            return result.Map(rule => rule.ToResponse());
+        });
 
         group.MapGet("/", async (HttpContext context, ISender mediator, CancellationToken ct) =>
-            await mediator.Send(new ListSyncRulesQuery(context.GetUserId()), ct));
+        {
+            var result = await mediator.Send(new ListSyncRulesQuery(context.GetUserId()), ct);
+            return result.Map(rules => rules.ToResponse());
+        });
 
         group.MapPost("/{id:guid}/archive", async (Guid id, ISender mediator, CancellationToken ct) =>
             await mediator.Send(new ArchiveSyncRuleCommand(id), ct));
@@ -51,7 +58,7 @@ public static class SyncRuleEndpoints
             UpdateFilterRequest request,
             ISender mediator,
             CancellationToken ct) =>
-            await mediator.Send(new UpdateFilterCommand(id, request.FilterPolicy), ct));
+            await mediator.Send(new UpdateFilterCommand(id, request.FilterPolicy.ToDomain()), ct));
 
         group.MapPatch("/{id:guid}/title", async (
             Guid id,
@@ -66,14 +73,3 @@ public static class SyncRuleEndpoints
         return group;
     }
 }
-
-public sealed record CreateSyncRuleRequest(
-    Guid SourceCalendarId,
-    Guid TargetCalendarId,
-    bool CopyTitle,
-    string CustomTitle,
-    FilterPolicy FilterPolicy);
-
-public sealed record UpdateFilterRequest(FilterPolicy FilterPolicy);
-
-public sealed record UpdateTitleRequest(bool CopyTitle, string CustomTitle);
