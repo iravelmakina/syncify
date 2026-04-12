@@ -5,4 +5,5 @@ public sealed record SyncedEventMapping(
     Guid SyncRuleId,
     string SourceEventId,
     string TargetBlockId,
+    DateTime SourceStart,
     DateTime SourceUpdatedAt);

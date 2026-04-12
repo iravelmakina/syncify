@@ -63,4 +63,22 @@ internal sealed class SyncedEventRepository : ISyncedEventRepository
             .Where(x => x.SyncRuleId == syncRuleId)
             .ExecuteDeleteAsync(ct);
     }
+
+    public async Task<IReadOnlyList<SyncedEventMapping>> ListByRuleSinceAsync(
+        Guid syncRuleId, DateTime fromUtc, CancellationToken ct = default)
+    {
+        var entities = await _db.SyncedEvents
+            .AsNoTracking()
+            .Where(x => x.SyncRuleId == syncRuleId && x.SourceStart >= fromUtc)
+            .ToListAsync(ct);
+
+        return entities.Select(e => e.ToDto()).ToList();
+    }
+
+    public async Task DeleteByRuleSinceAsync(Guid syncRuleId, DateTime fromUtc, CancellationToken ct = default)
+    {
+        await _db.SyncedEvents
+            .Where(x => x.SyncRuleId == syncRuleId && x.SourceStart >= fromUtc)
+            .ExecuteDeleteAsync(ct);
+    }
 }

@@ -12,6 +12,7 @@ internal static class SyncedEventMapper
             entity.SyncRuleId,
             entity.SourceEventId,
             entity.TargetBlockId,
+            entity.SourceStart.UtcDateTime,
             entity.SourceUpdatedAt.UtcDateTime);
     }
 
@@ -23,6 +24,7 @@ internal static class SyncedEventMapper
             SyncRuleId = mapping.SyncRuleId,
             SourceEventId = mapping.SourceEventId,
             TargetBlockId = mapping.TargetBlockId,
+            SourceStart = mapping.SourceStart,
             SourceUpdatedAt = mapping.SourceUpdatedAt
         };
     }
