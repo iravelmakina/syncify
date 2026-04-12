@@ -34,8 +34,16 @@ public sealed record TimeWindowCriterion : IFilterCriterion
 
     public bool Matches(EventSnapshot snapshot)
     {
-        return Weekdays.Contains(snapshot.Start.DayOfWeek)
-            && snapshot.Start.Hour >= StartHour
-            && snapshot.Start.Hour <= EndHour;
+        var start = snapshot.Start;
+
+        if (snapshot.TimeZoneId is not null)
+        {
+            var tz = TimeZoneInfo.FindSystemTimeZoneById(snapshot.TimeZoneId);
+            start = TimeZoneInfo.ConvertTimeFromUtc(start, tz);
+        }
+
+        return Weekdays.Contains(start.DayOfWeek)
+            && start.Hour >= StartHour
+            && start.Hour <= EndHour;
     }
 }
