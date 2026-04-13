@@ -4,7 +4,8 @@ namespace Syncify.Sync.Infrastructure.Google.Models;
 
 internal sealed record GoogleEventsResponse(
     [property: JsonPropertyName("items")] List<GoogleEventItem> Items,
-    [property: JsonPropertyName("nextSyncToken")] string? NextSyncToken);
+    [property: JsonPropertyName("nextSyncToken")] string? NextSyncToken,
+    [property: JsonPropertyName("timeZone")] string? TimeZone);
 
 internal sealed record GoogleEventItem(
     [property: JsonPropertyName("id")] string Id,

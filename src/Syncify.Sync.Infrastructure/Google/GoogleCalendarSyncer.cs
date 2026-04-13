@@ -4,6 +4,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Web;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Syncify.Sync.Application.Models;
 using Syncify.Sync.Application.Ports;
@@ -15,11 +16,13 @@ internal sealed class GoogleCalendarSyncer : ICalendarSyncer
 {
     private readonly HttpClient _httpClient;
     private readonly GoogleSyncOptions _options;
+    private readonly ILogger<GoogleCalendarSyncer> _logger;
 
-    public GoogleCalendarSyncer(HttpClient httpClient, IOptions<GoogleSyncOptions> options)
+    public GoogleCalendarSyncer(HttpClient httpClient, IOptions<GoogleSyncOptions> options, ILogger<GoogleCalendarSyncer> logger)
     {
         _httpClient = httpClient;
         _options = options.Value;
+        _logger = logger;
     }
 
     public async Task<FetchChangesResult> FetchChangesAsync(
@@ -29,17 +32,25 @@ internal sealed class GoogleCalendarSyncer : ICalendarSyncer
         int lookbackDays,
         CancellationToken ct = default)
     {
-        var url = BuildEventsUrl(providerCalendarId, cursor, lookbackDays);
+        var url = BuildFetchEventsUrl(providerCalendarId, cursor, lookbackDays);
+
+        _logger.LogInformation(
+            "FetchChanges GET {Url} calendarId={CalendarId} cursor={Cursor}",
+            url, providerCalendarId, cursor is not null ? "present" : "null");
 
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
         var response = await _httpClient.SendAsync(request, ct);
 
+        _logger.LogInformation(
+            "FetchChanges response {StatusCode} for calendarId={CalendarId}",
+            (int)response.StatusCode, providerCalendarId);
+
         if (response.StatusCode == HttpStatusCode.Gone)
         {
             // syncToken expired — caller should clear cursor and mappings, then full re-sync
-            return new FetchChangesResult(null, [], []);
+            return new FetchChangesResult(null, [], [], null);
         }
 
         if (!response.IsSuccessStatusCode)
@@ -72,7 +83,7 @@ internal sealed class GoogleCalendarSyncer : ICalendarSyncer
             }
         }
 
-        return new FetchChangesResult(result.NextSyncToken, changed, deleted);
+        return new FetchChangesResult(result.NextSyncToken, changed, deleted, result.TimeZone);
     }
 
     public async Task<string> CreateBlockAsync(
@@ -83,8 +94,12 @@ internal sealed class GoogleCalendarSyncer : ICalendarSyncer
         DateTime end,
         CancellationToken ct = default)
     {
-        var url = BuildEventsUrl(providerCalendarId);
+        var url = BuildEventsBasePath(providerCalendarId);
         var body = BuildEventBody(title, start, end);
+
+        _logger.LogInformation(
+            "CreateBlock POST {Url} calendarId={CalendarId} title={Title} start={Start} end={End}",
+            url, providerCalendarId, title, start, end);
 
         using var request = new HttpRequestMessage(HttpMethod.Post, url)
         {
@@ -93,6 +108,8 @@ internal sealed class GoogleCalendarSyncer : ICalendarSyncer
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
         var response = await _httpClient.SendAsync(request, ct);
+
+        _logger.LogInformation("CreateBlock response {StatusCode}", (int)response.StatusCode);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -116,8 +133,12 @@ internal sealed class GoogleCalendarSyncer : ICalendarSyncer
         DateTime end,
         CancellationToken ct = default)
     {
-        var url = $"{BuildEventsUrl(providerCalendarId)}/{Uri.EscapeDataString(blockId)}";
+        var url = $"{BuildEventsBasePath(providerCalendarId)}/{Uri.EscapeDataString(blockId)}";
         var body = BuildEventBody(title, start, end);
+
+        _logger.LogInformation(
+            "UpdateBlock PATCH {Url} calendarId={CalendarId} blockId={BlockId}",
+            url, providerCalendarId, blockId);
 
         using var request = new HttpRequestMessage(HttpMethod.Patch, url)
         {
@@ -126,6 +147,8 @@ internal sealed class GoogleCalendarSyncer : ICalendarSyncer
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
         var response = await _httpClient.SendAsync(request, ct);
+
+        _logger.LogInformation("UpdateBlock response {StatusCode}", (int)response.StatusCode);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -141,12 +164,18 @@ internal sealed class GoogleCalendarSyncer : ICalendarSyncer
         string blockId,
         CancellationToken ct = default)
     {
-        var url = $"{BuildEventsUrl(providerCalendarId)}/{Uri.EscapeDataString(blockId)}";
+        var url = $"{BuildEventsBasePath(providerCalendarId)}/{Uri.EscapeDataString(blockId)}";
+
+        _logger.LogInformation(
+            "DeleteBlock DELETE {Url} calendarId={CalendarId} blockId={BlockId}",
+            url, providerCalendarId, blockId);
 
         using var request = new HttpRequestMessage(HttpMethod.Delete, url);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
         var response = await _httpClient.SendAsync(request, ct);
+
+        _logger.LogInformation("DeleteBlock response {StatusCode}", (int)response.StatusCode);
 
         if (!response.IsSuccessStatusCode && response.StatusCode != HttpStatusCode.NotFound)
         {
@@ -156,10 +185,15 @@ internal sealed class GoogleCalendarSyncer : ICalendarSyncer
         }
     }
 
-    private string BuildEventsUrl(string providerCalendarId, string? syncToken = null, int lookbackDays = 7)
+    private string BuildEventsBasePath(string providerCalendarId)
     {
-        var path = _options.CalendarEventsPathTemplate
+        return _options.CalendarEventsPathTemplate
             .Replace("{calendarId}", Uri.EscapeDataString(providerCalendarId));
+    }
+
+    private string BuildFetchEventsUrl(string providerCalendarId, string? syncToken, int lookbackDays)
+    {
+        var path = BuildEventsBasePath(providerCalendarId);
         var query = HttpUtility.ParseQueryString(string.Empty);
 
         if (syncToken is not null)
@@ -168,14 +202,12 @@ internal sealed class GoogleCalendarSyncer : ICalendarSyncer
         }
         else
         {
-            query["timeMin"] = DateTime.UtcNow.AddDays(-lookbackDays).ToString("o");
+            query["timeMin"] = DateTime.UtcNow.AddDays(-lookbackDays).ToString("yyyy-MM-dd'T'HH:mm:ssZ");
+            query["timeMax"] = DateTime.UtcNow.AddDays(_options.ForwardDays).ToString("yyyy-MM-dd'T'HH:mm:ssZ");
             query["singleEvents"] = "true";
         }
 
-        var queryString = query.ToString();
-        return string.IsNullOrEmpty(queryString)
-            ? path
-            : $"{path}?{queryString}";
+        return $"{path}?{query}";
     }
 
     private static string BuildEventBody(string title, DateTime start, DateTime end)

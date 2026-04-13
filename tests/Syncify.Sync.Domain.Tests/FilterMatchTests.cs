@@ -7,8 +7,8 @@ public class FilterMatchTests
     private static readonly DateTime Start = new(2026, 4, 6, 10, 0, 0); // Monday
     private static readonly DateTime End = new(2026, 4, 6, 11, 0, 0);
 
-    private static EventSnapshot Snap(string? title = "Meeting") => new(title, Start, End);
-    private static EventSnapshot Snap(DateTime start) => new("Meeting", start, End);
+    private static EventSnapshot Snap(string? title = "Meeting") => new(title, Start, End, null);
+    private static EventSnapshot Snap(DateTime start) => new("Meeting", start, End, null);
 
     // --- KeywordsCriterion ---
 
@@ -87,10 +87,10 @@ public class FilterMatchTests
     }
 
     [Fact]
-    public void TimeWindow_AtEndBoundary_ReturnsTrue()
+    public void TimeWindow_AtEndBoundary_ReturnsFalse()
     {
         var criterion = new TimeWindowCriterion(9, 11, [DayOfWeek.Monday]);
-        Assert.True(criterion.Matches(Snap(new DateTime(2026, 4, 6, 11, 0, 0))));
+        Assert.False(criterion.Matches(Snap(new DateTime(2026, 4, 6, 11, 0, 0))));
     }
 
     // --- FilterPolicy ---

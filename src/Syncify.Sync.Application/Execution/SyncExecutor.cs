@@ -51,11 +51,13 @@ public sealed class SyncExecutor(
             var result = await calendarSyncer.FetchChangesAsync(
                 sourceProviderCalendarId, sourceToken, rule.SyncCursor, rule.LookbackDays, ct);
 
+            logger.LogInformation("Fetched changes for rule {RuleId}: {ChangedCount} changed, {DeletedCount} deleted", ruleId, result.ChangedEvents.Count, result.DeletedEventIds.Count);
+
             foreach (var eventId in result.DeletedEventIds)
                 await ProcessDeletionAsync(rule, targetProviderCalendarId, targetToken, eventId, ct);
 
             foreach (var ev in result.ChangedEvents)
-                await ProcessChangedEventAsync(rule, targetProviderCalendarId, targetToken, ev, ct);
+                await ProcessChangedEventAsync(rule, targetProviderCalendarId, targetToken, ev, result.TimeZone, ct);
 
             rule.UpdateSyncCursor(result.NewCursor, DateTime.UtcNow);
             await ruleRepository.UpdateAsync(rule, ct);
@@ -114,12 +116,14 @@ public sealed class SyncExecutor(
         string targetProviderCalendarId,
         string targetToken,
         CalendarEventDto ev,
+        string? sourceTimeZone,
         CancellationToken ct)
     {
         var mapping = await syncedEventRepository.GetByRuleAndSourceEventAsync(rule.Id, ev.Id, ct);
 
-        if (!rule.FilterPolicy.Matches(new EventSnapshot(ev.Title, ev.Start, ev.End)))
+        if (!rule.FilterPolicy.Matches(new EventSnapshot(ev.Title, ev.Start, ev.End, sourceTimeZone)))
         {
+            
             if (mapping is not null)
             {
                 await calendarSyncer.DeleteBlockAsync(
