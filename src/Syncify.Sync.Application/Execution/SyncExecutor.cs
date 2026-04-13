@@ -31,12 +31,11 @@ public sealed class SyncExecutor(
 
         try
         {
-            var targetToken = await connectionService.GetFreshAccessTokenAsync(rule.TargetCalendarId, ct);
-            var targetProviderCalendarId = await connectionService.GetProviderCalendarIdAsync(rule.TargetCalendarId, ct);
+            var target = await connectionService.GetProviderCalendarAccessTokenAsync(rule.TargetCalendarId, ct);
 
             if (rule.SyncCursor is null)
             {
-                await CleanupFutureBlocksAsync(rule, targetProviderCalendarId, targetToken, ct);
+                await CleanupFutureBlocksAsync(rule, target.ProviderCalendarId, target.AccessToken, ct);
             }
 
             if (rule.Status != SyncRuleStatus.Active)
@@ -45,19 +44,18 @@ public sealed class SyncExecutor(
                 return Result<Unit>.Success(Unit.Value);
             }
 
-            var sourceToken = await connectionService.GetFreshAccessTokenAsync(rule.SourceCalendarId, ct);
-            var sourceProviderCalendarId = await connectionService.GetProviderCalendarIdAsync(rule.SourceCalendarId, ct);
+            var source = await connectionService.GetProviderCalendarAccessTokenAsync(rule.SourceCalendarId, ct);
 
             var result = await calendarSyncer.FetchChangesAsync(
-                sourceProviderCalendarId, sourceToken, rule.SyncCursor, rule.LookbackDays, ct);
+                source.ProviderCalendarId, source.AccessToken, rule.SyncCursor, rule.LookbackDays, ct);
 
             logger.LogInformation("Fetched changes for rule {RuleId}: {ChangedCount} changed, {DeletedCount} deleted", ruleId, result.ChangedEvents.Count, result.DeletedEventIds.Count);
 
             foreach (var eventId in result.DeletedEventIds)
-                await ProcessDeletionAsync(rule, targetProviderCalendarId, targetToken, eventId, ct);
+                await ProcessDeletionAsync(rule, target.ProviderCalendarId, target.AccessToken, eventId, ct);
 
             foreach (var ev in result.ChangedEvents)
-                await ProcessChangedEventAsync(rule, targetProviderCalendarId, targetToken, ev, result.TimeZone, ct);
+                await ProcessChangedEventAsync(rule, target.ProviderCalendarId, target.AccessToken, ev, result.TimeZone, ct);
 
             rule.UpdateSyncCursor(result.NewCursor, DateTime.UtcNow);
             await ruleRepository.UpdateAsync(rule, ct);
