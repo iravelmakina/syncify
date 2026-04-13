@@ -1,0 +1,235 @@
+using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json;
+using System.Web;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Syncify.Sync.Application.Models;
+using Syncify.Sync.Application.Ports;
+using Syncify.Sync.Infrastructure.Google.Models;
+
+namespace Syncify.Sync.Infrastructure.Google;
+
+internal sealed class GoogleCalendarSyncer : ICalendarSyncer
+{
+    private readonly HttpClient _httpClient;
+    private readonly GoogleSyncOptions _options;
+    private readonly ILogger<GoogleCalendarSyncer> _logger;
+
+    public GoogleCalendarSyncer(HttpClient httpClient, IOptions<GoogleSyncOptions> options, ILogger<GoogleCalendarSyncer> logger)
+    {
+        _httpClient = httpClient;
+        _options = options.Value;
+        _logger = logger;
+    }
+
+    public async Task<FetchChangesResult> FetchChangesAsync(
+        string providerCalendarId,
+        string accessToken,
+        string? cursor,
+        int lookbackDays,
+        CancellationToken ct = default)
+    {
+        var url = BuildFetchEventsUrl(providerCalendarId, cursor, lookbackDays);
+
+        _logger.LogInformation(
+            "FetchChanges GET {Url} calendarId={CalendarId} cursor={Cursor}",
+            url, providerCalendarId, cursor is not null ? "present" : "null");
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        var response = await _httpClient.SendAsync(request, ct);
+
+        _logger.LogInformation(
+            "FetchChanges response {StatusCode} for calendarId={CalendarId}",
+            (int)response.StatusCode, providerCalendarId);
+
+        if (response.StatusCode == HttpStatusCode.Gone)
+        {
+            // syncToken expired — caller should clear cursor and mappings, then full re-sync
+            return new FetchChangesResult(null, [], [], null);
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync(ct);
+            throw new HttpRequestException(
+                $"Google Calendar events request failed with {response.StatusCode}: {error}");
+        }
+
+        var result = await response.Content.ReadFromJsonAsync<GoogleEventsResponse>(ct)
+            ?? throw new InvalidOperationException("Failed to deserialize Google Calendar events response.");
+
+        var changed = new List<CalendarEventDto>();
+        var deleted = new List<string>();
+
+        foreach (var item in result.Items)
+        {
+            if (GoogleEventStatusMapper.IsCancelled(item.Status))
+            {
+                deleted.Add(item.Id);
+            }
+            else if (item.Start is not null && item.End is not null)
+            {
+                changed.Add(new CalendarEventDto(
+                    item.Id,
+                    item.Summary,
+                    ParseDateTime(item.Start),
+                    ParseDateTime(item.End),
+                    item.Updated));
+            }
+        }
+
+        return new FetchChangesResult(result.NextSyncToken, changed, deleted, result.TimeZone);
+    }
+
+    public async Task<string> CreateBlockAsync(
+        string providerCalendarId,
+        string accessToken,
+        string title,
+        DateTime start,
+        DateTime end,
+        CancellationToken ct = default)
+    {
+        var url = BuildEventsBasePath(providerCalendarId);
+        var body = BuildEventBody(title, start, end);
+
+        _logger.LogInformation(
+            "CreateBlock POST {Url} calendarId={CalendarId} title={Title} start={Start} end={End}",
+            url, providerCalendarId, title, start, end);
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, url)
+        {
+            Content = new StringContent(body, Encoding.UTF8, "application/json")
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        var response = await _httpClient.SendAsync(request, ct);
+
+        _logger.LogInformation("CreateBlock response {StatusCode}", (int)response.StatusCode);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync(ct);
+            throw new HttpRequestException(
+                $"Google Calendar create event failed with {response.StatusCode}: {error}");
+        }
+
+        var created = await response.Content.ReadFromJsonAsync<GoogleEventItem>(ct)
+            ?? throw new InvalidOperationException("Failed to deserialize created event response.");
+
+        return created.Id;
+    }
+
+    public async Task UpdateBlockAsync(
+        string providerCalendarId,
+        string accessToken,
+        string blockId,
+        string title,
+        DateTime start,
+        DateTime end,
+        CancellationToken ct = default)
+    {
+        var url = $"{BuildEventsBasePath(providerCalendarId)}/{Uri.EscapeDataString(blockId)}";
+        var body = BuildEventBody(title, start, end);
+
+        _logger.LogInformation(
+            "UpdateBlock PATCH {Url} calendarId={CalendarId} blockId={BlockId}",
+            url, providerCalendarId, blockId);
+
+        using var request = new HttpRequestMessage(HttpMethod.Patch, url)
+        {
+            Content = new StringContent(body, Encoding.UTF8, "application/json")
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        var response = await _httpClient.SendAsync(request, ct);
+
+        _logger.LogInformation("UpdateBlock response {StatusCode}", (int)response.StatusCode);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync(ct);
+            throw new HttpRequestException(
+                $"Google Calendar update event failed with {response.StatusCode}: {error}");
+        }
+    }
+
+    public async Task DeleteBlockAsync(
+        string providerCalendarId,
+        string accessToken,
+        string blockId,
+        CancellationToken ct = default)
+    {
+        var url = $"{BuildEventsBasePath(providerCalendarId)}/{Uri.EscapeDataString(blockId)}";
+
+        _logger.LogInformation(
+            "DeleteBlock DELETE {Url} calendarId={CalendarId} blockId={BlockId}",
+            url, providerCalendarId, blockId);
+
+        using var request = new HttpRequestMessage(HttpMethod.Delete, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        var response = await _httpClient.SendAsync(request, ct);
+
+        _logger.LogInformation("DeleteBlock response {StatusCode}", (int)response.StatusCode);
+
+        if (!response.IsSuccessStatusCode && response.StatusCode != HttpStatusCode.NotFound)
+        {
+            var error = await response.Content.ReadAsStringAsync(ct);
+            throw new HttpRequestException(
+                $"Google Calendar delete event failed with {response.StatusCode}: {error}");
+        }
+    }
+
+    private string BuildEventsBasePath(string providerCalendarId)
+    {
+        return _options.CalendarEventsPathTemplate
+            .Replace("{calendarId}", Uri.EscapeDataString(providerCalendarId));
+    }
+
+    private string BuildFetchEventsUrl(string providerCalendarId, string? syncToken, int lookbackDays)
+    {
+        var path = BuildEventsBasePath(providerCalendarId);
+        var query = HttpUtility.ParseQueryString(string.Empty);
+
+        if (syncToken is not null)
+        {
+            query["syncToken"] = syncToken;
+        }
+        else
+        {
+            query["timeMin"] = DateTime.UtcNow.AddDays(-lookbackDays).ToString("yyyy-MM-dd'T'HH:mm:ssZ");
+            query["timeMax"] = DateTime.UtcNow.AddDays(_options.ForwardDays).ToString("yyyy-MM-dd'T'HH:mm:ssZ");
+            query["singleEvents"] = "true";
+        }
+
+        return $"{path}?{query}";
+    }
+
+    private static string BuildEventBody(string title, DateTime start, DateTime end)
+    {
+        var eventObj = new
+        {
+            summary = title,
+            start = new { dateTime = start.ToString("o"), timeZone = "UTC" },
+            end = new { dateTime = end.ToString("o"), timeZone = "UTC" }
+        };
+
+        return JsonSerializer.Serialize(eventObj);
+    }
+
+    private static DateTime ParseDateTime(GoogleEventDateTime dt)
+    {
+        if (dt.DateTime is not null)
+            return DateTime.Parse(dt.DateTime).ToUniversalTime();
+
+        if (dt.Date is not null)
+            return DateTime.Parse(dt.Date).ToUniversalTime();
+
+        throw new InvalidOperationException("Google event has no dateTime or date.");
+    }
+}

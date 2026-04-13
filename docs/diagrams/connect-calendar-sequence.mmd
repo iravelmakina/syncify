@@ -1,0 +1,23 @@
+sequenceDiagram
+    actor User
+    participant API
+    participant ConnApp as Connections
+    participant Google as Google API
+    participant DB
+
+    User->>API: POST /connections/google/auth-url
+    API->>ConnApp: GenerateAuthURL()
+    ConnApp-->>User: consent URL
+
+    User->>User: open URL, consent, copy code
+
+    User->>API: POST /connections/google/callback
+    API->>ConnApp: CompleteOAuth(userID, code)
+    ConnApp->>Google: exchange code for tokens
+    Google-->>ConnApp: access_token + refresh_token
+    ConnApp->>Google: calendarList.list()
+    Google-->>ConnApp: calendars + access roles
+    ConnApp->>ConnApp: map roles to CalendarAccess
+    ConnApp->>DB: save account (token encrypted)
+    ConnApp->>DB: save calendars
+    ConnApp-->>User: 201 {account_id, calendars}

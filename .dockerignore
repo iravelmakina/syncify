@@ -1,0 +1,13 @@
+**/bin/
+**/obj/
+**/.git/
+**/.idea/
+**/.vs/
+**/.vscode/
+**/node_modules/
+*.pdf
+*.md
+.dockerignore
+Dockerfile
+.claude/
+docs/
