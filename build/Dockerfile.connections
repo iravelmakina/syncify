@@ -1,0 +1,23 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+COPY syncify.sln ./
+COPY src/Syncify.Connections.Api/Syncify.Connections.Api.csproj               src/Syncify.Connections.Api/
+COPY src/Syncify.Shared/Syncify.Shared.csproj                                 src/Syncify.Shared/
+COPY src/Syncify.Connections.Domain/Syncify.Connections.Domain.csproj         src/Syncify.Connections.Domain/
+COPY src/Syncify.Connections.Application/Syncify.Connections.Application.csproj src/Syncify.Connections.Application/
+COPY src/Syncify.Connections.Infrastructure/Syncify.Connections.Infrastructure.csproj src/Syncify.Connections.Infrastructure/
+
+RUN dotnet restore src/Syncify.Connections.Api/Syncify.Connections.Api.csproj
+
+COPY src/ src/
+
+RUN dotnet publish src/Syncify.Connections.Api/Syncify.Connections.Api.csproj -c Release -o /app --no-restore
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+WORKDIR /app
+
+COPY --from=build /app .
+
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "Syncify.Connections.Api.dll"]
