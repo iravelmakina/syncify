@@ -3,6 +3,7 @@ WORKDIR /src
 
 COPY syncify.sln ./
 COPY src/Syncify.Sync.Api/Syncify.Sync.Api.csproj                                   src/Syncify.Sync.Api/
+COPY src/Syncify.Gateway/Syncify.Gateway.csproj                                     src/Syncify.Gateway/
 COPY src/Syncify.Shared/Syncify.Shared.csproj                                       src/Syncify.Shared/
 COPY src/Syncify.Connections.Domain/Syncify.Connections.Domain.csproj               src/Syncify.Connections.Domain/
 COPY src/Syncify.Connections.Application/Syncify.Connections.Application.csproj     src/Syncify.Connections.Application/
