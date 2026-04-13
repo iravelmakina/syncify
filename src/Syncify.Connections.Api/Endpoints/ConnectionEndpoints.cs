@@ -1,15 +1,15 @@
 using MediatR;
-using Syncify.Sync.Api.Filters;
-using Syncify.Sync.Api.Mappers;
-using Syncify.Sync.Api.Middleware;
-using Syncify.Sync.Api.Responses;
+using Syncify.Connections.Api.Mappers;
+using Syncify.Connections.Api.Responses;
 using Syncify.Connections.Application.Commands.CompleteOAuth;
 using Syncify.Connections.Application.Commands.RevokeConnection;
 using Syncify.Connections.Application.Queries.GenerateAuthUrl;
 using Syncify.Connections.Application.Queries.ListCalendars;
 using Syncify.Connections.Application.Queries.ListConnections;
+using Syncify.Shared.Filters;
+using Syncify.Shared.Middleware;
 
-namespace Syncify.Sync.Api.Endpoints;
+namespace Syncify.Connections.Api.Endpoints;
 
 public static class ConnectionEndpoints
 {

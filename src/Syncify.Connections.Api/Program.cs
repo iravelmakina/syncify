@@ -1,12 +1,11 @@
+using MediatR;
 using Scalar.AspNetCore;
-using Syncify.Sync.Api.Endpoints;
+using Syncify.Connections.Api.Endpoints;
 using Syncify.Connections.Application.Ports;
 using Syncify.Connections.Infrastructure;
 using Syncify.Shared.Behaviors;
 using Syncify.Shared.Middleware;
 using Syncify.Shared.OpenApi;
-using Syncify.Sync.Application.Ports;
-using Syncify.Sync.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,27 +20,22 @@ builder.Services.AddProblemDetails();
 builder.Services.AddMediatR(cfg =>
 {
     cfg.RegisterServicesFromAssembly(typeof(ICalendarAccountRepository).Assembly);
-    cfg.RegisterServicesFromAssembly(typeof(ISyncRuleRepository).Assembly);
     cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));
     cfg.AddOpenBehavior(typeof(DomainExceptionBehavior<,>));
 });
 
 builder.Services.AddConnectionsModule(builder.Configuration);
-builder.Services.AddSyncModule(builder.Configuration);
 
 var app = builder.Build();
 
-// 1. Run during development
-// 2. Or if explicitly requested via --migrate flag (useful for CI/CD)
 if (app.Environment.IsDevelopment() || args.Contains("--migrate"))
 {
     await app.Services.MigrateConnectionsDatabaseAsync();
-    await app.Services.MigrateSyncDatabaseAsync();
-    
+
     if (args.Contains("--migrate"))
     {
         var logger = app.Services.GetRequiredService<ILogger<Program>>();
-        logger.LogInformation("Migrations completed successfully.");
+        logger.LogInformation("Connections migrations completed successfully.");
         return;
     }
 }
@@ -53,10 +47,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseExceptionHandler();
-
 app.UseMiddleware<UserIdMiddleware>();
 
-app.MapSyncRuleEndpoints();
+app.MapConnectionEndpoints();
+app.MapInternalConnectionEndpoints();
 app.MapHealthEndpoints();
 
 app.Run();

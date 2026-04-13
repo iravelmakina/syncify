@@ -1,7 +1,8 @@
 using System.Diagnostics;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
-namespace Syncify.Sync.Api.Behaviors;
+namespace Syncify.Shared.Behaviors;
 
 public sealed class LoggingBehavior<TRequest, TResponse>(ILogger<LoggingBehavior<TRequest, TResponse>> logger)
     : IPipelineBehavior<TRequest, TResponse>

@@ -1,8 +1,8 @@
-using Syncify.Sync.Api.Responses;
+using Syncify.Connections.Api.Responses;
 using Syncify.Connections.Application.Queries.ListConnections;
 using Syncify.Connections.Domain.ValueObjects;
 
-namespace Syncify.Sync.Api.Mappers;
+namespace Syncify.Connections.Api.Mappers;
 
 internal static class ConnectionMapper
 {

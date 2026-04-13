@@ -1,6 +1,6 @@
-using Syncify.Sync.Application.Ports;
+using Syncify.Connections.Application.Ports;
 
-namespace Syncify.Sync.Api.Endpoints;
+namespace Syncify.Connections.Api.Endpoints;
 
 public static class HealthEndpoints
 {
@@ -9,12 +9,12 @@ public static class HealthEndpoints
         var group = routes.MapGroup("/").WithTags("Health");
 
         group.MapGet("/health", async (
-            ISyncHealthCheck syncHealth,
+            IConnectionsHealthCheck connectionsHealth,
             CancellationToken ct) =>
         {
             try
             {
-                var healthy = await syncHealth.IsHealthyAsync(ct);
+                var healthy = await connectionsHealth.IsHealthyAsync(ct);
                 return healthy
                     ? Results.Ok(new { status = "healthy" })
                     : Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
