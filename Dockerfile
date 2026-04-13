@@ -2,7 +2,8 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 COPY syncify.sln ./
-COPY src/Syncify.Api/Syncify.Api.csproj                                             src/Syncify.Api/
+COPY src/Syncify.Sync.Api/Syncify.Sync.Api.csproj                                   src/Syncify.Sync.Api/
+COPY src/Syncify.Gateway/Syncify.Gateway.csproj                                     src/Syncify.Gateway/
 COPY src/Syncify.Shared/Syncify.Shared.csproj                                       src/Syncify.Shared/
 COPY src/Syncify.Connections.Domain/Syncify.Connections.Domain.csproj               src/Syncify.Connections.Domain/
 COPY src/Syncify.Connections.Application/Syncify.Connections.Application.csproj     src/Syncify.Connections.Application/
@@ -15,14 +16,14 @@ COPY tests/Syncify.Connections.Domain.Tests/Syncify.Connections.Domain.Tests.csp
 COPY tests/Syncify.Sync.Domain.Tests/Syncify.Sync.Domain.Tests.csproj                     tests/Syncify.Sync.Domain.Tests/
 COPY tests/Syncify.Sync.Application.Tests/Syncify.Sync.Application.Tests.csproj           tests/Syncify.Sync.Application.Tests/
 COPY tests/Syncify.Sync.Infrastructure.Tests/Syncify.Sync.Infrastructure.Tests.csproj     tests/Syncify.Sync.Infrastructure.Tests/
-COPY tests/Syncify.Api.Tests/Syncify.Api.Tests.csproj                                     tests/Syncify.Api.Tests/
+COPY tests/Syncify.Sync.Api.Tests/Syncify.Sync.Api.Tests.csproj                           tests/Syncify.Sync.Api.Tests/
 
 RUN dotnet restore
 
 COPY src/ src/
 COPY tests/ tests/
 
-RUN dotnet publish src/Syncify.Api/Syncify.Api.csproj -c Release -o /app --no-restore
+RUN dotnet publish src/Syncify.Sync.Api/Syncify.Sync.Api.csproj -c Release -o /app --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
@@ -30,4 +31,4 @@ WORKDIR /app
 COPY --from=build /app .
 
 EXPOSE 8080
-ENTRYPOINT ["dotnet", "Syncify.Api.dll"]
+ENTRYPOINT ["dotnet", "Syncify.Sync.Api.dll"]
