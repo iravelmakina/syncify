@@ -36,7 +36,7 @@ internal sealed class HttpConnectionService : IConnectionService
                 $"Connections Service access request failed with {response.StatusCode}: {error}");
         }
 
-        var result = await response.Content.ReadFromJsonAsync<InternalCalendarAccessResponse>(ct)
+        var result = await response.Content.ReadFromJsonAsync<CalendarAccessResponse>(ct)
             ?? throw new InvalidOperationException("Failed to deserialize calendar access response.");
 
         return Enum.Parse<CalendarAccess>(result.Access, ignoreCase: true);
@@ -58,7 +58,7 @@ internal sealed class HttpConnectionService : IConnectionService
                 $"Connections Service token request failed with {response.StatusCode}: {error}");
         }
 
-        var result = await response.Content.ReadFromJsonAsync<InternalProviderCalendarAccessTokenResponse>(ct)
+        var result = await response.Content.ReadFromJsonAsync<ProviderCalendarAccessTokenResponse>(ct)
             ?? throw new InvalidOperationException("Failed to deserialize provider calendar access token response.");
 
         return new ProviderCalendarAccessToken(result.AccessToken, result.ProviderCalendarId);
