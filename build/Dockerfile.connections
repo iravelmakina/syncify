@@ -10,7 +10,11 @@ COPY src/Syncify.Connections.Infrastructure/Syncify.Connections.Infrastructure.c
 
 RUN dotnet restore src/Syncify.Connections.Api/Syncify.Connections.Api.csproj
 
-COPY src/ src/
+COPY src/Syncify.Connections.Api/ src/Syncify.Connections.Api/
+COPY src/Syncify.Shared/ src/Syncify.Shared/
+COPY src/Syncify.Connections.Domain/ src/Syncify.Connections.Domain/
+COPY src/Syncify.Connections.Application/ src/Syncify.Connections.Application/
+COPY src/Syncify.Connections.Infrastructure/ src/Syncify.Connections.Infrastructure/
 
 RUN dotnet publish src/Syncify.Connections.Api/Syncify.Connections.Api.csproj -c Release -o /app --no-restore
 

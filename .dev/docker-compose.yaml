@@ -1,0 +1,74 @@
+services:
+  connections-db:
+    container_name: connections-db
+    image: postgres:17
+    environment:
+      POSTGRES_USER: connections
+      POSTGRES_PASSWORD: connections
+      POSTGRES_DB: connections
+    ports:
+      - "5433:5432"
+    volumes:
+      - connections-pgdata:/var/lib/postgresql/data
+
+  sync-db:
+    container_name: sync-db
+    image: postgres:17
+    environment:
+      POSTGRES_USER: sync
+      POSTGRES_PASSWORD: sync
+      POSTGRES_DB: sync
+    ports:
+      - "5434:5432"
+    volumes:
+      - sync-pgdata:/var/lib/postgresql/data
+
+  connections-service:
+    container_name: connections-service
+    build:
+      context: ..
+      dockerfile: build/Dockerfile.connections
+    ports:
+      - "8081:8080"
+    environment:
+      ConnectionStrings__DefaultConnection: "Host=connections-db;Port=5432;Database=connections;Username=connections;Password=connections"
+      Encryption__Key: "${ENCRYPTION_KEY}"
+      ASPNETCORE_ENVIRONMENT: Development
+      Google__ClientId: "${GOOGLE_CLIENT_ID}"
+      Google__ClientSecret: "${GOOGLE_CLIENT_SECRET}"
+    depends_on:
+      - connections-db
+
+  sync-service:
+    container_name: sync-service
+    build:
+      context: ..
+      dockerfile: build/Dockerfile.sync
+    ports:
+      - "8082:8080"
+    environment:
+      ConnectionStrings__DefaultConnection: "Host=sync-db;Port=5432;Database=sync;Username=sync;Password=sync"
+      ConnectionsService__BaseUrl: "http://connections-service:8080"
+      ASPNETCORE_ENVIRONMENT: Development
+    depends_on:
+      - sync-db
+      - connections-service
+
+  gateway:
+    container_name: gateway
+    build:
+      context: ..
+      dockerfile: build/Dockerfile.gateway
+    ports:
+      - "5000:8080"
+    environment:
+      ReverseProxy__Clusters__connections__Destinations__default__Address: "http://connections-service:8080"
+      ReverseProxy__Clusters__sync__Destinations__default__Address: "http://sync-service:8080"
+      ASPNETCORE_ENVIRONMENT: Development
+    depends_on:
+      - connections-service
+      - sync-service
+
+volumes:
+  connections-pgdata:
+  sync-pgdata:
