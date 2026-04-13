@@ -2,7 +2,7 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Syncify.Api", "src\Syncify.Api\Syncify.Api.csproj", "{654B7E0F-40A0-4B47-87AA-86FBB9F04EA0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Syncify.Sync.Api", "src\Syncify.Sync.Api\Syncify.Sync.Api.csproj", "{654B7E0F-40A0-4B47-87AA-86FBB9F04EA0}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Syncify.Shared", "src\Syncify.Shared\Syncify.Shared.csproj", "{74731D66-58FA-4920-9B0C-C22B9F53DCEC}"
 EndProject
@@ -18,13 +18,15 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Syncify.Connections.Domain"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Syncify.Connections.Infrastructure", "src\Syncify.Connections.Infrastructure\Syncify.Connections.Infrastructure.csproj", "{46251F20-33B6-4ABB-A09B-2C0BB6A38797}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Syncify.Gateway", "src\Syncify.Gateway\Syncify.Gateway.csproj", "{B1A2C3D4-E5F6-7890-ABCD-EF1234567890}"
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Syncify.Connections.Domain.Tests", "tests\Syncify.Connections.Domain.Tests\Syncify.Connections.Domain.Tests.csproj", "{8412886A-A62E-48A5-8D26-E0209C9BBA6F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Syncify.Sync.Domain.Tests", "tests\Syncify.Sync.Domain.Tests\Syncify.Sync.Domain.Tests.csproj", "{A3BD52E8-1E08-4675-B7AE-58D65A254002}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Syncify.Api.Tests", "tests\Syncify.Api.Tests\Syncify.Api.Tests.csproj", "{4BC9579A-4F7D-4F1B-85E3-7CB1AAFF871D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Syncify.Sync.Api.Tests", "tests\Syncify.Sync.Api.Tests\Syncify.Sync.Api.Tests.csproj", "{4BC9579A-4F7D-4F1B-85E3-7CB1AAFF871D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Syncify.Connections.Application.Tests", "tests\Syncify.Connections.Application.Tests\Syncify.Connections.Application.Tests.csproj", "{5EE0D135-14D8-44BA-989B-3FCA2D4531D8}"
 EndProject
@@ -79,6 +81,11 @@ Global
         {46251F20-33B6-4ABB-A09B-2C0BB6A38797}.Release|Any CPU.ActiveCfg = Release|Any CPU
         {46251F20-33B6-4ABB-A09B-2C0BB6A38797}.Release|Any CPU.Build.0 = Release|Any CPU
 
+        {B1A2C3D4-E5F6-7890-ABCD-EF1234567890}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {B1A2C3D4-E5F6-7890-ABCD-EF1234567890}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {B1A2C3D4-E5F6-7890-ABCD-EF1234567890}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {B1A2C3D4-E5F6-7890-ABCD-EF1234567890}.Release|Any CPU.Build.0 = Release|Any CPU
+
         {8412886A-A62E-48A5-8D26-E0209C9BBA6F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
         {8412886A-A62E-48A5-8D26-E0209C9BBA6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
         {8412886A-A62E-48A5-8D26-E0209C9BBA6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -118,6 +125,7 @@ Global
 		{AC6C0658-8A7B-4BF9-97F6-DB0927AC481D} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{9AE5ADAE-25ED-474A-8FF7-95BAC5C1825C} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{46251F20-33B6-4ABB-A09B-2C0BB6A38797} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{B1A2C3D4-E5F6-7890-ABCD-EF1234567890} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{8412886A-A62E-48A5-8D26-E0209C9BBA6F} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{A3BD52E8-1E08-4675-B7AE-58D65A254002} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{4BC9579A-4F7D-4F1B-85E3-7CB1AAFF871D} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
