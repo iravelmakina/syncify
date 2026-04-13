@@ -1,0 +1,23 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+COPY syncify.sln ./
+COPY src/Syncify.Sync.Api/Syncify.Sync.Api.csproj src/Syncify.Sync.Api/
+COPY src/Syncify.Sync.Application/Syncify.Sync.Application.csproj src/Syncify.Sync.Application/
+COPY src/Syncify.Sync.Infrastructure/Syncify.Sync.Infrastructure.csproj src/Syncify.Sync.Infrastructure/
+COPY src/Syncify.Shared/Syncify.Shared.csproj src/Syncify.Shared/
+
+RUN dotnet restore src/Syncify.Sync.Api
+
+COPY src/Syncify.Sync.Api/ src/Syncify.Sync.Api/
+COPY src/Syncify.Sync.Application/ src/Syncify.Sync.Application/
+COPY src/Syncify.Sync.Infrastructure/ src/Syncify.Sync.Infrastructure/
+COPY src/Syncify.Shared/ src/Syncify.Shared/
+
+RUN dotnet publish src/Syncify.Sync.Api -c Release -o /app --no-restore
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
+WORKDIR /app
+COPY --from=build /app .
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "Syncify.Sync.Api.dll"]
