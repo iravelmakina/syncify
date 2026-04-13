@@ -123,7 +123,6 @@ public sealed class SyncExecutor(
 
         if (!rule.FilterPolicy.Matches(new EventSnapshot(ev.Title, ev.Start, ev.End, sourceTimeZone)))
         {
-            logger.LogInformation("Event {EventId} does not match filter policy for rule {RuleId}", ev.Id, rule.Id);
             
             if (mapping is not null)
             {
