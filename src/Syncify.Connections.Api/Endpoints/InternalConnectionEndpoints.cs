@@ -19,7 +19,7 @@ public static class InternalConnectionEndpoints
             try
             {
                 var access = await connectionService.GetCalendarAccessAsync(calendarId, ct);
-                return Results.Ok(new InternalCalendarAccessResponse(access.ToString()));
+                return Results.Ok(new CalendarAccessResponse(access.ToString()));
             }
             catch (InvalidOperationException)
             {
@@ -35,7 +35,7 @@ public static class InternalConnectionEndpoints
             try
             {
                 var result = await connectionService.GetProviderCalendarAccessTokenAsync(calendarId, ct);
-                return Results.Ok(new InternalProviderCalendarAccessTokenResponse(result.AccessToken, result.ProviderCalendarId));
+                return Results.Ok(new ProviderCalendarAccessTokenResponse(result.AccessToken, result.ProviderCalendarId));
             }
             catch (InvalidOperationException)
             {
