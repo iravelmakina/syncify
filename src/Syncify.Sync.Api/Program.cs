@@ -1,9 +1,5 @@
 using Scalar.AspNetCore;
-using Syncify.Sync.Api.Behaviors;
 using Syncify.Sync.Api.Endpoints;
-using Syncify.Sync.Api.Middleware;
-using Syncify.Sync.Api.OpenApi;
-using Syncify.Api.Endpoints;
 using Syncify.Connections.Application.Ports;
 using Syncify.Connections.Infrastructure;
 using Syncify.Shared.Behaviors;

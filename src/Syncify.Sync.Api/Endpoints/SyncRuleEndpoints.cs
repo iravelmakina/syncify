@@ -1,7 +1,7 @@
 using MediatR;
-using Syncify.Sync.Api.Filters;
+using Syncify.Shared.Filters;
 using Syncify.Sync.Api.Mappers;
-using Syncify.Sync.Api.Middleware;
+using Syncify.Shared.Middleware;
 using Syncify.Sync.Api.Requests;
 using Syncify.Sync.Application.Commands.ArchiveSyncRule;
 using Syncify.Sync.Application.Commands.CreateSyncRule;
