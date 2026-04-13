@@ -1,12 +1,12 @@
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
-namespace Syncify.Sync.Api.OpenApi;
+namespace Syncify.Shared.OpenApi;
 
 public sealed class UserIdHeaderTransformer : IOpenApiOperationTransformer
 {
     private static readonly string[] SkipPaths = ["health"];
-    
+
     public Task TransformAsync(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
     {
         var path = context.Description.RelativePath;

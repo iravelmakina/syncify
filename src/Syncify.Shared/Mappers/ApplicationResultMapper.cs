@@ -1,6 +1,9 @@
+using Microsoft.AspNetCore.Http;
 using Syncify.Shared.Errors;
 
-namespace Syncify.Sync.Api.Mappers;
+namespace Syncify.Shared.Mappers;
+
+using Results = Microsoft.AspNetCore.Http.Results;
 
 internal static class ApplicationResultMapper
 {

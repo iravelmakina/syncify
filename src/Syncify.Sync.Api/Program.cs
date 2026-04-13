@@ -3,8 +3,12 @@ using Syncify.Sync.Api.Behaviors;
 using Syncify.Sync.Api.Endpoints;
 using Syncify.Sync.Api.Middleware;
 using Syncify.Sync.Api.OpenApi;
+using Syncify.Api.Endpoints;
 using Syncify.Connections.Application.Ports;
 using Syncify.Connections.Infrastructure;
+using Syncify.Shared.Behaviors;
+using Syncify.Shared.Middleware;
+using Syncify.Shared.OpenApi;
 using Syncify.Sync.Application.Ports;
 using Syncify.Sync.Infrastructure;
 
@@ -56,7 +60,6 @@ app.UseExceptionHandler();
 
 app.UseMiddleware<UserIdMiddleware>();
 
-app.MapConnectionEndpoints();
 app.MapSyncRuleEndpoints();
 app.MapHealthEndpoints();
 

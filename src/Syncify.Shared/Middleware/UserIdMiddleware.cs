@@ -1,6 +1,6 @@
-using Syncify.Shared;
+using Microsoft.AspNetCore.Http;
 
-namespace Syncify.Sync.Api.Middleware;
+namespace Syncify.Shared.Middleware;
 
 public sealed class UserIdMiddleware(RequestDelegate next)
 {

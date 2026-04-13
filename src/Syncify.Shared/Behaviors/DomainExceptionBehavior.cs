@@ -2,7 +2,7 @@ using MediatR;
 using Syncify.Shared.Errors;
 using Syncify.Shared.Results;
 
-namespace Syncify.Sync.Api.Behaviors;
+namespace Syncify.Shared.Behaviors;
 
 public sealed class DomainExceptionBehavior<TRequest, TResponse>
     : IPipelineBehavior<TRequest, TResponse>

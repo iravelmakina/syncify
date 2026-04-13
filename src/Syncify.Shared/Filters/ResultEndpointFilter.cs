@@ -1,8 +1,11 @@
 using MediatR;
-using Syncify.Sync.Api.Mappers;
+using Microsoft.AspNetCore.Http;
+using Syncify.Shared.Mappers;
 using Syncify.Shared.Results;
 
-namespace Syncify.Sync.Api.Filters;
+namespace Syncify.Shared.Filters;
+
+using Results = Microsoft.AspNetCore.Http.Results;
 
 public sealed class ResultEndpointFilter : IEndpointFilter
 {
