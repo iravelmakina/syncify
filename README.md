@@ -39,123 +39,151 @@ Status transitions: `Active ⇄ Expired`, `Active/Expired → Revoked` (terminal
 
 Status transitions: `Active ⇄ Archived` (terminal: none — archiving is reversible via resume)
 
-## Initial Architecture
+## Architecture (Practice 5 — Microservices)
 
-Modular monolith — two bounded contexts in a single deployable binary, each with Clean Architecture layering (domain → application → infrastructure). Modules communicate through an explicit facade interface, never by accessing each other's internals.
+The system has evolved from a modular monolith into three independent services with an API Gateway:
+
+```
+Client
+  │
+  ▼
+┌──────────────┐
+│   Gateway    │  YARP reverse proxy
+│  (port 5000) │  /connections/* → connections-service
+│              │  /sync-rules/*  → sync-service
+│              │  /health        → self
+└──────┬───────┘
+       │
+  ┌────┴─────┐
+  ▼          ▼
+┌────────┐  ┌─────────────────┐
+│Connections│ │  Sync Service   │
+│ Service │  │                 │
+│ :8081  │  │     :8082       │
+└───┬────┘  └──┬──────────────┘
+    │          │        │
+    ▼          │        ▼
+┌──────────┐   │  ┌──────────┐
+│connections│   │  │  sync-db │
+│   -db    │   │  │ (Postgres)│
+│(Postgres)│   │  └──────────┘
+└──────────┘   │
+               │  HTTP: GET /internal/calendars/{id}/access
+               │  HTTP: GET /internal/calendars/{id}/token
+               └──────────────────────────────────────────────►  Connections Service
+```
+
+### Service Responsibilities
+
+| Component | Responsibility | Port | Database |
+|---|---|---|---|
+| **Gateway** | Routes `/connections/*` and `/sync-rules/*`, adds `X-Correlation-Id`, forwards `X-User-ID` | 5000 | None |
+| **Connections Service** | OAuth, calendar accounts, calendar listing, internal endpoints for Sync | 8081 | connections-db (port 5433) |
+| **Sync Service** | Sync rules, polling, execution — calls Connections via HTTP | 8082 | sync-db (port 5434) |
+
+### Why microservices now?
+
+We started with a modular monolith (Practice 4) to understand the domain first. Now that bounded contexts are validated, we extracted Connections into its own service because it:
+- Has external dependencies (Google OAuth) with different scaling needs
+- Is called by Sync but never calls back — clear dependency direction
+- Can be evolved and deployed independently
+
+The module boundaries were designed from the start so extraction required no changes to domain or application layers — only the facade implementation changed from in-process to HTTP.
 
 See `docs/adr/` for detailed decisions: bounded context split (ADR-001), provider abstraction (ADR-002), auth & OAuth strategy (ADR-003), aggregate design & domain rules (ADR-004).
 
-### Why modular monolith first?
+## Service Degradation Behavior
 
-We intentionally start with a modular monolith rather than microservices because we understand the domain the least at the beginning. A monolith with clear module boundaries lets us: delay irreversible infrastructure decisions (message brokers, service mesh, distributed tracing), keep business logic understandable in one codebase, and validate the bounded context split before paying the operational cost of distributed deployment. The module boundaries are designed so that in Practice 5, the Connections module can be extracted into its own service by replacing the in-process facade call with an HTTP client — no domain or application layer changes required.
+### When Connections Service is Down
+
+| Operation | Behavior |
+|---|---|
+| Create sync rule | ❌ Returns 503 Service Unavailable (cannot validate calendar access) |
+| Resume archived rule | ❌ Returns 503 Service Unavailable (cannot validate calendar access) |
+| Execute sync | ❌ Returns 503 Service Unavailable (cannot fetch fresh OAuth token) |
+| List sync rules | ✅ Still works (no cross-service call needed) |
+| Get sync rule | ✅ Still works (no cross-service call needed) |
+| Archive sync rule | ✅ Still works (no cross-service call needed) |
+
+### When Sync Service is Down
+
+| Operation | Behavior |
+|---|---|
+| All Connections endpoints | ✅ Still work (Connections is independent) |
+| All Sync endpoints | ❌ Return 502 Bad Gateway or timeout |
+
+### When Gateway is Down
+
+All endpoints become unreachable from external clients. Services can still communicate internally (Sync → Connections).
 
 ## Prerequisites
 
 - .NET 10.0 SDK
-- Docker
+- Docker & Docker Compose
 - A Google Cloud project with Calendar API enabled and OAuth 2.0 credentials (installed application type)
-- PostgreSQL 16+
 
-## Helpful Commands
+## Quick Start (Docker Compose)
 
-### Configuration
-Generate a valid 32-byte Base64 encryption key (required for `Encryption:Key`):
-```bash
-openssl rand -base64 32
-```
-
-### Docker Management
-```bash
-# View running containers
-docker ps
-
-# View application logs
-docker logs -f syncify-app
-
-# Stop and remove all project containers
-docker stop syncify-app syncify-db
-docker rm syncify-app syncify-db
-```
-
-### Database (PostgreSQL)
-```bash
-# Connect to the database via psql (inside container)
-docker exec -it syncify-db psql -U syncify -d syncify
-
-# List all tables
-# \dt
-
-# View migration history
-# SELECT * FROM "__EFMigrationsHistory";
-```
-
-## Run locally
+This is the recommended way to run the full system with all services:
 
 ```bash
-# 1. Start PostgreSQL (if not running)
-docker run -d --name syncify-db \
-  -e POSTGRES_USER=syncify \
-  -e POSTGRES_PASSWORD=syncify \
-  -e POSTGRES_DB=syncify \
-  -p 5432:5432 \
-  postgres:16
+# 1. Copy the environment template
+cp .dev/.env.example .dev/.env
 
-# 2. Configure secrets in appsettings.Development.json
-#    - Google:ClientId / Google:ClientSecret
-#    - Encryption:Key (base64-encoded 32-byte key)
+# 2. Edit .dev/.env with your Google OAuth credentials
+# GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+# GOOGLE_CLIENT_SECRET=your-client-secret
+# ENCRYPTION_KEY=dev-key-replace-in-production-32b
 
-# 3. Run
-# Migrations run automatically in Development environment.
-# To run ONLY migrations, use:
-# dotnet run --project src/Syncify.Api -- --migrate
+# 3. Start all services
+cd .dev
+docker compose up --build
 
-dotnet run --project src/Syncify.Api
+# The gateway will be available at http://localhost:5000
 ```
 
-The API starts at `http://localhost:5030` by default.
+### Service URLs
 
-## Run with Docker
-
-```bash
-# Build the image
-docker build -t syncify .
-
-# Run (make sure to fill in .env)
-docker run -p 8080:8080 \
-  --env-file .env \
-  -e ASPNETCORE_ENVIRONMENT=Development \
-  syncify
-```
-
-The containerized API listens on port 8080.
-
-## Tests
-
-```bash
-# Run all tests
-dotnet test syncify.sln
-
-# Run specific test project
-dotnet test tests/Syncify.Connections.Domain.Tests
-dotnet test tests/Syncify.Sync.Domain.Tests
-dotnet test tests/Syncify.Connections.Application.Tests
-dotnet test tests/Syncify.Sync.Application.Tests
-dotnet test tests/Syncify.Api.Tests          # requires Docker (Testcontainers)
-```
-
-## OpenAPI
-
-After running the app, access Scalar UI at:
-```
-http://localhost:8080/scalar/v1
-```
+| Service | URL | OpenAPI |
+|---|---|---|
+| **Gateway** (main entry point) | http://localhost:5000 | N/A |
+| Connections Service | http://localhost:8081 | http://localhost:8081/scalar/v1 |
+| Sync Service | http://localhost:8082 | http://localhost:8082/scalar/v1 |
+| Connections DB | localhost:5433 | psql -h localhost -p 5433 -U connections -d connections |
+| Sync DB | localhost:5434 | psql -h localhost -p 5434 -U sync -d sync |
 
 > All endpoints expect an `X-User-ID` header (UUID) for user identification. For testing, you can use:
 > ```
 > 00000000-0000-0000-0000-000000000001
 > ```
 
-### Filter Policy JSON
+## Interactive API Documentation
+
+Each service provides interactive API documentation via Scalar UI:
+
+- **Connections Service**: http://localhost:8081/scalar/v1
+  - OAuth endpoints (`/connections/google/*`)
+  - Calendar account management (`/connections`)
+  - Calendar listing (`/connections/{accountId}/calendars`)
+  - Internal endpoints (`/internal/calendars/*`) — for service-to-service communication
+
+- **Sync Service**: http://localhost:8082/scalar/v1
+  - Sync rule CRUD (`/sync-rules`)
+  - Sync execution (`/sync-rules/{id}/execute`)
+  - Archive/Resume (`/sync-rules/{id}/archive`, `/sync-rules/{id}/resume`)
+
+- **Gateway**: Routes client traffic to the above services
+  - `/connections/*` → Connections Service
+  - `/sync-rules/*` → Sync Service
+  - `/health` → Gateway self-health
+
+> **Note**: When testing via Scalar UI, you can use the default test user ID:
+> ```
+> 00000000-0000-0000-0000-000000000001
+> ```
+> This should be provided in the `X-User-ID` header for all endpoints.
+
+## Filter Policy JSON
 
 `filterPolicy.criteria` accepts all implementations of `IFilterCriterion` from the domain value objects.
 - `type` must be one of `excludes`, `keywords`, or `timeWindow`
@@ -163,7 +191,6 @@ http://localhost:8080/scalar/v1
 - `keywords` must contain between 1 and 20 values
 - `startHour` and `endHour` must be between `0` and `23`, and `startHour` must be less than `endHour`
 - `weekdays` must contain at least one `DayOfWeek` value serialized as integers (`1` = Monday, ..., `5` = Friday)
-
 
 Example with all currently supported criteria:
 
@@ -189,13 +216,7 @@ Example with all currently supported criteria:
         "type": "timeWindow",
         "startHour": 9,
         "endHour": 17,
-        "weekdays": [
-          1,
-          2,
-          3,
-          4,
-          5
-        ]
+        "weekdays": [1, 2, 3, 4, 5]
       }
     ]
   }
@@ -210,13 +231,121 @@ Single-criterion example:
     "criteria": [
       {
         "type": "excludes",
-        "keywords": [
-          "busy"
-        ]
+        "keywords": ["busy"]
       }
     ]
   }
 }
+```
+
+## Development (Local)
+
+To run services individually for development:
+
+### Connections Service
+
+```bash
+# Start PostgreSQL
+docker run -d --name connections-db \
+  -e POSTGRES_USER=connections \
+  -e POSTGRES_PASSWORD=connections \
+  -e POSTGRES_DB=connections \
+  -p 5433:5432 \
+  postgres:17
+
+# Run service
+cd src/Syncify.Connections.Api
+dotnet run
+# Available at http://localhost:8081
+```
+
+### Sync Service
+
+```bash
+# Start PostgreSQL
+docker run -d --name sync-db \
+  -e POSTGRES_USER=sync \
+  -e POSTGRES_PASSWORD=sync \
+  -e POSTGRES_DB=sync \
+  -p 5434:5432 \
+  postgres:17
+
+# Run service (requires Connections Service running)
+cd src/Syncify.Sync.Api
+dotnet run
+# Available at http://localhost:8082
+```
+
+### Gateway
+
+```bash
+# Requires both Connections and Sync services running
+cd src/Syncify.Gateway
+dotnet run
+# Available at http://localhost:5000
+```
+
+## Tests
+
+```bash
+# Run all tests
+dotnet test syncify.sln
+
+# Run specific test projects
+dotnet test tests/Syncify.Connections.Domain.Tests
+dotnet test tests/Syncify.Sync.Domain.Tests
+dotnet test tests/Syncify.Connections.Application.Tests
+dotnet test tests/Syncify.Sync.Application.Tests
+dotnet test tests/Syncify.Sync.Infrastructure.Tests  # includes HttpConnectionService tests
+dotnet test tests/Syncify.Sync.Api.Tests             # requires Docker (Testcontainers)
+```
+
+Total test coverage: 16+ tests across domain, application, infrastructure, and integration layers.
+
+## Helpful Commands
+
+### Docker Compose Management
+
+```bash
+# View all running containers
+docker ps
+
+# View logs for a specific service
+docker logs -f connections-service
+docker logs -f sync-service
+docker logs -f gateway
+
+# Stop all services
+docker compose down
+
+# Stop and remove volumes (fresh start)
+docker compose down -v
+
+# Rebuild a specific service
+docker compose up --build connections-service
+```
+
+### Database Access
+
+```bash
+# Connect to Connections DB
+docker exec -it connections-db psql -U connections -d connections
+
+# Connect to Sync DB
+docker exec -it sync-db psql -U sync -d sync
+
+# View migration history
+# SELECT * FROM "__EFMigrationsHistory";
+
+# List all tables
+# \dt
+```
+
+### Configuration
+
+Generate a valid 32-byte Base64 encryption key (required for `Encryption:Key`):
+```bash
+openssl rand -base64 32
 ```
 
 ## Team workflow
@@ -224,7 +353,7 @@ Single-criterion example:
 1. Each team member works on a separate feature branch
 2. Open a PR against `main` when ready for review
 3. Domain and application tests must pass before merge
-4. Integration tests (`Syncify.Api.Tests`) run against a real PostgreSQL via Testcontainers
+4. Integration tests (`Syncify.Sync.Api.Tests`) run against a real PostgreSQL via Testcontainers
 
 PRs: https://github.com/iravelmakina/syncify/pulls?q=is%3Apr+is%3Aclosed
 
@@ -235,3 +364,4 @@ PRs: https://github.com/iravelmakina/syncify/pulls?q=is%3Apr+is%3Aclosed
 | 28 March | Architecture brainstorming and design | Bounded context split, aggregate design, ADRs |
 | 5 April | Practice 4 | Infrastructure, API endpoints, domain/application tests |
 | 7 April | Practice 4 refinement and testing | Code review fixes, migrations, Docker, README |
+| 12-14 April | Practice 5 — Microservices extraction | Gateway setup, Connections service extraction, HTTP facade implementation, Docker Compose |
