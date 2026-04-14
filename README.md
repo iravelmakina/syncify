@@ -133,103 +133,31 @@ docker compose up --build
 > 00000000-0000-0000-0000-000000000001
 > ```
 
-## API Examples (via Gateway)
+## Interactive API Documentation
 
-All client requests go through the Gateway at port 5000:
+Each service provides interactive API documentation via Scalar UI:
 
-### Connections API
+- **Connections Service**: http://localhost:8081/scalar/v1
+  - OAuth endpoints (`/connections/google/*`)
+  - Calendar account management (`/connections`)
+  - Calendar listing (`/connections/{accountId}/calendars`)
+  - Internal endpoints (`/internal/calendars/*`) — for service-to-service communication
 
-```bash
-# Generate Google OAuth URL
-curl -X POST http://localhost:5000/connections/google/auth-url \
-  -H "X-User-ID: 00000000-0000-0000-0000-000000000001"
+- **Sync Service**: http://localhost:8082/scalar/v1
+  - Sync rule CRUD (`/sync-rules`)
+  - Sync execution (`/sync-rules/{id}/execute`)
+  - Archive/Resume (`/sync-rules/{id}/archive`, `/sync-rules/{id}/resume`)
 
-# Complete OAuth callback (after user authorizes)
-curl -X POST http://localhost:5000/connections/google/callback \
-  -H "Content-Type: application/json" \
-  -H "X-User-ID: 00000000-0000-0000-0000-000000000001" \
-  -d '{"code": "authorization-code-from-google"}'
+- **Gateway**: Routes client traffic to the above services
+  - `/connections/*` → Connections Service
+  - `/sync-rules/*` → Sync Service
+  - `/health` → Gateway self-health
 
-# List user's connections
-curl http://localhost:5000/connections \
-  -H "X-User-ID: 00000000-0000-0000-0000-000000000001"
-
-# List calendars for a connection
-curl http://localhost:5000/connections/{accountId}/calendars \
-  -H "X-User-ID: 00000000-0000-0000-0000-000000000001"
-
-# Revoke a connection
-curl -X DELETE http://localhost:5000/connections/{accountId} \
-  -H "X-User-ID: 00000000-0000-0000-0000-000000000001"
-```
-
-### Sync Rules API
-
-```bash
-# Create a sync rule
-curl -X POST http://localhost:5000/sync-rules \
-  -H "Content-Type: application/json" \
-  -H "X-User-ID: 00000000-0000-0000-0000-000000000001" \
-  -d '{
-    "sourceCalendarId": "source-calendar-uuid",
-    "targetCalendarId": "target-calendar-uuid",
-    "copyTitle": false,
-    "customTitle": "Busy",
-    "lookbackDays": 7,
-    "filterPolicy": {
-      "criteria": [
-        {
-          "type": "timeWindow",
-          "startHour": 9,
-          "endHour": 17,
-          "weekdays": [1, 2, 3, 4, 5]
-        }
-      ]
-    }
-  }'
-
-# Get a sync rule
-curl http://localhost:5000/sync-rules/{id} \
-  -H "X-User-ID: 00000000-0000-0000-0000-000000000001"
-
-# List all sync rules for a user
-curl http://localhost:5000/sync-rules \
-  -H "X-User-ID: 00000000-0000-0000-0000-000000000001"
-
-# Execute sync manually
-curl -X POST http://localhost:5000/sync-rules/{id}/execute \
-  -H "X-User-ID: 00000000-0000-0000-0000-000000000001"
-
-# Archive a sync rule
-curl -X POST http://localhost:5000/sync-rules/{id}/archive \
-  -H "X-User-ID: 00000000-0000-0000-0000-000000000001"
-
-# Resume an archived sync rule
-curl -X POST http://localhost:5000/sync-rules/{id}/resume \
-  -H "X-User-ID: 00000000-0000-0000-0000-000000000001"
-
-# Update sync rule title settings
-curl -X PATCH http://localhost:5000/sync-rules/{id}/title \
-  -H "Content-Type: application/json" \
-  -H "X-User-ID: 00000000-0000-0000-0000-000000000001" \
-  -d '{
-    "copyTitle": true,
-    "customTitle": null
-  }'
-```
-
-### Health Checks
-
-```bash
-# Gateway health
-curl http://localhost:5000/health
-
-# Connections Service health
-curl http://localhost:8081/health
-
-# Sync Service health
-curl http://localhost:8082/health
-```
+> **Note**: When testing via Scalar UI, you can use the default test user ID:
+> ```
+> 00000000-0000-0000-0000-000000000001
+> ```
+> This should be provided in the `X-User-ID` header for all endpoints.
 
 ## Service Degradation Behavior
 
