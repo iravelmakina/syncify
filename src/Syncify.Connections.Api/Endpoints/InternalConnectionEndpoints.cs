@@ -1,4 +1,5 @@
 using Syncify.Connections.Api.Responses;
+using Syncify.Shared.Contracts;
 using Syncify.Shared.Ports;
 
 namespace Syncify.Connections.Api.Endpoints;
@@ -26,15 +27,15 @@ public static class InternalConnectionEndpoints
             }
         });
 
-        group.MapGet("/calendars/{calendarId:guid}/fresh-token", async (
+        group.MapGet("/calendars/{calendarId:guid}/token", async (
             Guid calendarId,
             IConnectionService connectionService,
             CancellationToken ct) =>
         {
             try
             {
-                var token = await connectionService.GetFreshAccessTokenAsync(calendarId, ct);
-                return Results.Ok(new FreshTokenResponse(token));
+                var result = await connectionService.GetProviderCalendarAccessTokenAsync(calendarId, ct);
+                return Results.Ok(new ProviderCalendarAccessTokenResponse(result.AccessToken, result.ProviderCalendarId));
             }
             catch (InvalidOperationException)
             {

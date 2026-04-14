@@ -4,7 +4,6 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Web;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Syncify.Sync.Application.Models;
 using Syncify.Sync.Application.Ports;
@@ -16,13 +15,11 @@ internal sealed class GoogleCalendarSyncer : ICalendarSyncer
 {
     private readonly HttpClient _httpClient;
     private readonly GoogleSyncOptions _options;
-    private readonly ILogger<GoogleCalendarSyncer> _logger;
 
-    public GoogleCalendarSyncer(HttpClient httpClient, IOptions<GoogleSyncOptions> options, ILogger<GoogleCalendarSyncer> logger)
+    public GoogleCalendarSyncer(HttpClient httpClient, IOptions<GoogleSyncOptions> options)
     {
         _httpClient = httpClient;
         _options = options.Value;
-        _logger = logger;
     }
 
     public async Task<FetchChangesResult> FetchChangesAsync(
@@ -34,18 +31,10 @@ internal sealed class GoogleCalendarSyncer : ICalendarSyncer
     {
         var url = BuildFetchEventsUrl(providerCalendarId, cursor, lookbackDays);
 
-        _logger.LogInformation(
-            "FetchChanges GET {Url} calendarId={CalendarId} cursor={Cursor}",
-            url, providerCalendarId, cursor is not null ? "present" : "null");
-
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
         var response = await _httpClient.SendAsync(request, ct);
-
-        _logger.LogInformation(
-            "FetchChanges response {StatusCode} for calendarId={CalendarId}",
-            (int)response.StatusCode, providerCalendarId);
 
         if (response.StatusCode == HttpStatusCode.Gone)
         {
@@ -97,10 +86,6 @@ internal sealed class GoogleCalendarSyncer : ICalendarSyncer
         var url = BuildEventsBasePath(providerCalendarId);
         var body = BuildEventBody(title, start, end);
 
-        _logger.LogInformation(
-            "CreateBlock POST {Url} calendarId={CalendarId} title={Title} start={Start} end={End}",
-            url, providerCalendarId, title, start, end);
-
         using var request = new HttpRequestMessage(HttpMethod.Post, url)
         {
             Content = new StringContent(body, Encoding.UTF8, "application/json")
@@ -108,8 +93,6 @@ internal sealed class GoogleCalendarSyncer : ICalendarSyncer
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
         var response = await _httpClient.SendAsync(request, ct);
-
-        _logger.LogInformation("CreateBlock response {StatusCode}", (int)response.StatusCode);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -136,10 +119,6 @@ internal sealed class GoogleCalendarSyncer : ICalendarSyncer
         var url = $"{BuildEventsBasePath(providerCalendarId)}/{Uri.EscapeDataString(blockId)}";
         var body = BuildEventBody(title, start, end);
 
-        _logger.LogInformation(
-            "UpdateBlock PATCH {Url} calendarId={CalendarId} blockId={BlockId}",
-            url, providerCalendarId, blockId);
-
         using var request = new HttpRequestMessage(HttpMethod.Patch, url)
         {
             Content = new StringContent(body, Encoding.UTF8, "application/json")
@@ -147,8 +126,6 @@ internal sealed class GoogleCalendarSyncer : ICalendarSyncer
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
         var response = await _httpClient.SendAsync(request, ct);
-
-        _logger.LogInformation("UpdateBlock response {StatusCode}", (int)response.StatusCode);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -166,16 +143,10 @@ internal sealed class GoogleCalendarSyncer : ICalendarSyncer
     {
         var url = $"{BuildEventsBasePath(providerCalendarId)}/{Uri.EscapeDataString(blockId)}";
 
-        _logger.LogInformation(
-            "DeleteBlock DELETE {Url} calendarId={CalendarId} blockId={BlockId}",
-            url, providerCalendarId, blockId);
-
         using var request = new HttpRequestMessage(HttpMethod.Delete, url);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
         var response = await _httpClient.SendAsync(request, ct);
-
-        _logger.LogInformation("DeleteBlock response {StatusCode}", (int)response.StatusCode);
 
         if (!response.IsSuccessStatusCode && response.StatusCode != HttpStatusCode.NotFound)
         {

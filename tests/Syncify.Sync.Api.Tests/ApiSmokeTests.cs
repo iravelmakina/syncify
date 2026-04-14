@@ -25,18 +25,18 @@ public sealed class ApiSmokeTests(SyncifyWebApplicationFactory factory)
     {
         var client = factory.CreateClient();
 
-        var response = await client.GetAsync("/connections");
+        var response = await client.GetAsync("/sync-rules");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
-    public async Task ListConnections_WithValidUserIdHeader_Returns200()
+    public async Task ListSyncRules_WithValidUserIdHeader_Returns200()
     {
         var client = factory.CreateClient();
         client.DefaultRequestHeaders.Add("X-User-ID", Guid.NewGuid().ToString());
 
-        var response = await client.GetAsync("/connections");
+        var response = await client.GetAsync("/sync-rules");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
