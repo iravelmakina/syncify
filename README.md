@@ -92,6 +92,30 @@ The module boundaries were designed from the start so extraction required no cha
 
 See `docs/adr/` for detailed decisions: bounded context split (ADR-001), provider abstraction (ADR-002), auth & OAuth strategy (ADR-003), aggregate design & domain rules (ADR-004).
 
+## Service Degradation Behavior
+
+### When Connections Service is Down
+
+| Operation | Behavior |
+|---|---|
+| Create sync rule | ❌ Returns 503 Service Unavailable (cannot validate calendar access) |
+| Resume archived rule | ❌ Returns 503 Service Unavailable (cannot validate calendar access) |
+| Execute sync | ❌ Returns 503 Service Unavailable (cannot fetch fresh OAuth token) |
+| List sync rules | ✅ Still works (no cross-service call needed) |
+| Get sync rule | ✅ Still works (no cross-service call needed) |
+| Archive sync rule | ✅ Still works (no cross-service call needed) |
+
+### When Sync Service is Down
+
+| Operation | Behavior |
+|---|---|
+| All Connections endpoints | ✅ Still work (Connections is independent) |
+| All Sync endpoints | ❌ Return 502 Bad Gateway or timeout |
+
+### When Gateway is Down
+
+All endpoints become unreachable from external clients. Services can still communicate internally (Sync → Connections).
+
 ## Prerequisites
 
 - .NET 10.0 SDK
@@ -158,30 +182,6 @@ Each service provides interactive API documentation via Scalar UI:
 > 00000000-0000-0000-0000-000000000001
 > ```
 > This should be provided in the `X-User-ID` header for all endpoints.
-
-## Service Degradation Behavior
-
-### When Connections Service is Down
-
-| Operation | Behavior |
-|---|---|
-| Create sync rule | ❌ Returns 503 Service Unavailable (cannot validate calendar access) |
-| Resume archived rule | ❌ Returns 503 Service Unavailable (cannot validate calendar access) |
-| Execute sync | ❌ Returns 503 Service Unavailable (cannot fetch fresh OAuth token) |
-| List sync rules | ✅ Still works (no cross-service call needed) |
-| Get sync rule | ✅ Still works (no cross-service call needed) |
-| Archive sync rule | ✅ Still works (no cross-service call needed) |
-
-### When Sync Service is Down
-
-| Operation | Behavior |
-|---|---|
-| All Connections endpoints | ✅ Still work (Connections is independent) |
-| All Sync endpoints | ❌ Return 502 Bad Gateway or timeout |
-
-### When Gateway is Down
-
-All endpoints become unreachable from external clients. Services can still communicate internally (Sync → Connections).
 
 ## Filter Policy JSON
 
