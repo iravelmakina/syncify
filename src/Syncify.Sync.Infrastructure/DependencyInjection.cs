@@ -33,6 +33,8 @@ public static class DependencyInjection
         services.AddScoped<ISyncHealthCheck, SyncHealthCheck>();
         services.AddScoped<ISyncExecutor, SyncExecutor>();
 
+        services.AddHttpContextAccessor();
+
         services.AddHttpClient<IConnectionService, HttpConnectionService>((sp, client) =>
         {
             var options = sp.GetRequiredService<IOptions<ConnectionsServiceOptions>>().Value;
