@@ -25,7 +25,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="Syncify.Api.Tests" />
+    <InternalsVisibleTo Include="Syncify.Sync.Api.Tests" />
+    <InternalsVisibleTo Include="Syncify.Sync.Infrastructure.Tests" />
   </ItemGroup>
 
 </Project>

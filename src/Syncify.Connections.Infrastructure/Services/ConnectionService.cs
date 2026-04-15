@@ -29,7 +29,7 @@ internal sealed class ConnectionService : IConnectionService
         return Enum.Parse<CalendarAccess>(calendar.Access, ignoreCase: true);
     }
 
-    public async Task<string> GetFreshAccessTokenAsync(Guid calendarId, CancellationToken ct = default)
+    public async Task<ProviderCalendarAccessToken> GetProviderCalendarAccessTokenAsync(Guid calendarId, CancellationToken ct = default)
     {
         var calendar = await _db.Calendars
             .AsNoTracking()
@@ -39,16 +39,6 @@ internal sealed class ConnectionService : IConnectionService
 
         var accessToken = await _oauthProvider.RefreshAccessTokenAsync(calendar.Account.RefreshToken, ct);
 
-        return accessToken;
-    }
-
-    public async Task<string> GetProviderCalendarIdAsync(Guid calendarId, CancellationToken ct = default)
-    {
-        var calendar = await _db.Calendars
-            .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Id == calendarId, ct)
-            ?? throw new InvalidOperationException($"Calendar {calendarId} not found.");
-
-        return calendar.ProviderCalendarId;
+        return new ProviderCalendarAccessToken(accessToken, calendar.ProviderCalendarId);
     }
 }

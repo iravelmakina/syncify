@@ -3,9 +3,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Syncify.Shared.Ports;
 using Syncify.Sync.Application.Execution;
 using Syncify.Sync.Application.Ports;
 using Syncify.Sync.Infrastructure.Google;
+using Syncify.Sync.Infrastructure.Http;
 using Syncify.Sync.Infrastructure.Persistence;
 using Syncify.Sync.Infrastructure.Polling;
 
@@ -21,6 +23,7 @@ public static class DependencyInjection
     {
         services.Configure<GoogleSyncOptions>(configuration.GetSection(GoogleSyncOptions.SectionName));
         services.Configure<SyncPollerOptions>(configuration.GetSection(SyncPollerOptions.SectionName));
+        services.Configure<ConnectionsServiceOptions>(configuration.GetSection(ConnectionsServiceOptions.SectionName));
 
         services.AddDbContext<SyncDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
@@ -29,6 +32,17 @@ public static class DependencyInjection
         services.AddScoped<ISyncedEventRepository, SyncedEventRepository>();
         services.AddScoped<ISyncHealthCheck, SyncHealthCheck>();
         services.AddScoped<ISyncExecutor, SyncExecutor>();
+
+        services.AddHttpContextAccessor();
+
+        services.AddHttpClient<IConnectionService, HttpConnectionService>((sp, client) =>
+        {
+            var options = sp.GetRequiredService<IOptions<ConnectionsServiceOptions>>().Value;
+            if (string.IsNullOrEmpty(options.BaseUrl))
+                throw new InvalidOperationException("ConnectionsService:BaseUrl configuration is missing.");
+
+            client.BaseAddress = new Uri(options.BaseUrl);
+        }).AddStandardResilienceHandler();
 
         services.AddHttpClient<ICalendarSyncer, GoogleCalendarSyncer>((sp, client) =>
             ConfigureGoogleClient(
