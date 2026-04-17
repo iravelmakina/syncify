@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
+using Syncify.Shared;
 using Syncify.Shared.Contracts;
 using Syncify.Shared.Enums;
 using Syncify.Shared.Middleware;
@@ -73,10 +74,22 @@ internal sealed class HttpConnectionService : IConnectionService
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
 
-        var userId = _httpContextAccessor.HttpContext?.GetUserId();
+        var userId = TryGetUserId();
         if (userId is not null)
             request.Headers.Add("X-User-ID", userId.Value.ToString());
 
         return await _httpClient.SendAsync(request, ct);
+    }
+
+    private UserId? TryGetUserId()
+    {
+        var httpContext = _httpContextAccessor.HttpContext;
+        if (httpContext is null)
+            return null;
+
+        return httpContext.Items.TryGetValue(UserIdMiddleware.UserIdKey, out var userId)
+            && userId is UserId typedUserId
+                ? typedUserId
+                : null;
     }
 }
