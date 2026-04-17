@@ -15,5 +15,11 @@
   },
   "Encryption": {
     "Key": "dev-key-replace-in-production-32b"
+  },
+  "RabbitMQ": {
+    "Host": "localhost",
+    "VirtualHost": "/",
+    "Username": "guest",
+    "Password": "guest"
   }
 }
