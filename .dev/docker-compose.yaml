@@ -1,4 +1,19 @@
 services:
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   connections-db:
     container_name: connections-db
     image: postgres:17
@@ -49,8 +64,13 @@ services:
     environment:
       ConnectionStrings__DefaultConnection: "Host=sync-db;Port=5432;Database=sync;Username=sync;Password=sync"
       ConnectionsService__BaseUrl: "http://connections-service:8080"
+      RabbitMQ__Host: "rabbitmq"
+      RabbitMQ__Username: "guest"
+      RabbitMQ__Password: "guest"
+      RabbitMQ__VirtualHost: "/"
       ASPNETCORE_ENVIRONMENT: Development
     depends_on:
+      - rabbitmq
       - sync-db
       - connections-service
 
