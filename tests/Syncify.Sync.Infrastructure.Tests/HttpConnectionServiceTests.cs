@@ -1,4 +1,5 @@
 using System.Net;
+using Microsoft.AspNetCore.Http;
 using Moq;
 using Moq.Protected;
 using Syncify.Shared.Enums;
@@ -16,7 +17,11 @@ public class HttpConnectionServiceTests
     {
         _httpClient = new HttpClient(_handlerMock.Object) { BaseAddress = new Uri("http://connections-service") };
         var options = Microsoft.Extensions.Options.Options.Create(new ConnectionsServiceOptions { BaseUrl = "http://connections-service" });
-        _service = new HttpConnectionService(_httpClient, options);
+        var httpContextAccessor = new HttpContextAccessor
+        {
+            HttpContext = new DefaultHttpContext()
+        };
+        _service = new HttpConnectionService(_httpClient, options, httpContextAccessor);
     }
 
     [Fact]
