@@ -1,5 +1,6 @@
 using Scalar.AspNetCore;
 using Syncify.Sync.Api.Endpoints;
+using Syncify.Shared.Correlation;
 using Syncify.Shared.Behaviors;
 using Syncify.Shared.Middleware;
 using Syncify.Shared.OpenApi;
@@ -22,6 +23,8 @@ builder.Services.AddMediatR(cfg =>
     cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));
     cfg.AddOpenBehavior(typeof(DomainExceptionBehavior<,>));
 });
+
+builder.Services.AddScoped<ICorrelationIdAccessor, CorrelationIdAccessor>();
 
 builder.Services.AddSyncModule(builder.Configuration);
 

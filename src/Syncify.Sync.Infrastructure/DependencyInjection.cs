@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,9 +25,26 @@ public static class DependencyInjection
         services.Configure<GoogleSyncOptions>(configuration.GetSection(GoogleSyncOptions.SectionName));
         services.Configure<SyncPollerOptions>(configuration.GetSection(SyncPollerOptions.SectionName));
         services.Configure<ConnectionsServiceOptions>(configuration.GetSection(ConnectionsServiceOptions.SectionName));
+        services.Configure<RabbitMqOptions>(configuration.GetSection(RabbitMqOptions.SectionName));
 
         services.AddDbContext<SyncDbContext>(options =>
             options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+
+        services.AddMassTransit(x =>
+        {
+            x.UsingRabbitMq((context, cfg) =>
+            {
+                var options = context.GetRequiredService<IOptions<RabbitMqOptions>>().Value;
+
+                cfg.Host(options.Host, options.VirtualHost, h =>
+                {
+                    h.Username(options.Username);
+                    h.Password(options.Password);
+                });
+
+                cfg.ConfigureEndpoints(context);
+            });
+        });
 
         services.AddScoped<ISyncRuleRepository, SyncRuleRepository>();
         services.AddScoped<ISyncedEventRepository, SyncedEventRepository>();
