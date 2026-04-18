@@ -53,14 +53,9 @@ internal sealed class SyncRuleCreatedConsumer : IConsumer<SyncRuleCreatedEvent>
         return new Notification
         {
             EventId = message.EventId,
-            EventType = "SyncRuleCreated",
             CorrelationId = message.CorrelationId,
-            UserId = message.UserId,
-            Summary = message.Summary,
             Payload = JsonSerializer.Serialize(message),
-            OccurredAt = message.OccurredAt,
             CreatedAt = DateTime.UtcNow,
-            IsRead = false
         };
     }
 }
