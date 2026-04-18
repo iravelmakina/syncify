@@ -1,4 +1,4 @@
-namespace Syncify.Notifications.Api.Data;
+namespace Syncify.Notifications.Api.Persistence.Entities;
 
 public class Notification
 {
