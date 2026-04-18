@@ -1,3 +1,6 @@
+using MassTransit;
+using Syncify.Shared.Correlation;
+using Syncify.Shared.Events;
 using MediatR;
 using Syncify.Shared.Ports;
 using Syncify.Shared.Results;
@@ -8,7 +11,9 @@ namespace Syncify.Sync.Application.Commands.CreateSyncRule;
 
 public sealed class CreateSyncRuleCommandHandler(
     ISyncRuleRepository repository,
-    IConnectionService connectionService)
+    IConnectionService connectionService,
+    IPublishEndpoint publishEndpoint,
+    ICorrelationIdAccessor correlationIdAccessor)
     : IRequestHandler<CreateSyncRuleCommand, Result<Guid>>
 {
     public async Task<Result<Guid>> Handle(CreateSyncRuleCommand command, CancellationToken ct)
@@ -29,6 +34,17 @@ public sealed class CreateSyncRuleCommandHandler(
             DateTime.UtcNow);
 
         await repository.CreateAsync(rule, ct);
+
+        await publishEndpoint.Publish(new SyncRuleCreatedEvent
+        {
+            EventId = Guid.NewGuid(),
+            OccurredAt = DateTime.UtcNow,
+            CorrelationId = correlationIdAccessor.CorrelationId,
+            SyncRuleId = rule.Id,
+            UserId = command.UserId.Value,
+            Summary = $"Sync rule created: {command.SourceCalendarId} → {command.TargetCalendarId}"
+        }, ct);
+
         return Result<Guid>.Success(rule.Id);
     }
 }
