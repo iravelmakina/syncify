@@ -39,9 +39,9 @@ Status transitions: `Active ⇄ Expired`, `Active/Expired → Revoked` (terminal
 
 Status transitions: `Active ⇄ Archived` (terminal: none — archiving is reversible via resume)
 
-## Architecture (Practice 5 — Microservices)
+## Architecture (Practice 6 — Event-Driven Microservices)
 
-The system has evolved from a modular monolith into three independent services with an API Gateway:
+The system uses four independent services with an API Gateway and asynchronous event-driven communication via RabbitMQ:
 
 ```
 Client
@@ -54,23 +54,41 @@ Client
 │              │  /health        → self
 └──────┬───────┘
        │
-  ┌────┴─────┐
-  ▼          ▼
-┌────────┐  ┌─────────────────┐
-│Connections│ │  Sync Service   │
-│ Service │  │                 │
-│ :8081  │  │     :8082       │
-└───┬────┘  └──┬──────────────┘
-    │          │        │
-    ▼          │        ▼
-┌──────────┐   │  ┌──────────┐
-│connections│   │  │  sync-db │
-│   -db    │   │  │ (Postgres)│
-│(Postgres)│   │  └──────────┘
-└──────────┘   │
-               │  HTTP: GET /internal/calendars/{id}/access
-               │  HTTP: GET /internal/calendars/{id}/token
-               └──────────────────────────────────────────────►  Connections Service
+  ┌────┴─────────────────┐
+  ▼                      ▼
+┌────────────┐  ┌─────────────────┐
+│Connections │  │  Sync Service   │
+│  Service   │  │     :8082       │
+│   :8081    │  │                 │
+└─────┬──────┘  └──┬──────┬───────┘
+      │            │      │
+      ▼            │      │ Event: SyncRuleCreated
+┌──────────┐       │      │ (Transactional Outbox)
+│connections│       │      ▼
+│   -db    │       │  ┌──────────┐
+│(Postgres)│       │  │ RabbitMQ │
+└──────────┘       │  │  :5672   │
+                   │  │  :15672  │ (Management UI)
+                   │  └────┬─────┘
+                   │       │
+                   ▼       ▼
+              ┌──────────┐ ┌─────────────────────┐
+              │  sync-db │ │ Notifications Service│
+              │(Postgres)│ │       :8083         │
+              └──────────┘ └──────────┬──────────┘
+                                      │
+                                      ▼
+                              ┌───────────────┐
+                              │notifications-db│
+                              │   (Postgres)   │
+                              └───────────────┘
+
+HTTP: Sync → Connections
+  GET /internal/calendars/{id}/access
+  GET /internal/calendars/{id}/token
+
+Events: Sync → RabbitMQ → Notifications
+  SyncRuleCreatedEvent (via Outbox pattern)
 ```
 
 ### Service Responsibilities
@@ -79,16 +97,19 @@ Client
 |---|---|---|---|
 | **Gateway** | Routes `/connections/*` and `/sync-rules/*`, adds `X-Correlation-Id`, forwards `X-User-ID` | 5000 | None |
 | **Connections Service** | OAuth, calendar accounts, calendar listing, internal endpoints for Sync | 8081 | connections-db (port 5433) |
-| **Sync Service** | Sync rules, polling, execution — calls Connections via HTTP | 8082 | sync-db (port 5434) |
+| **Sync Service** | Sync rules, polling, execution — calls Connections via HTTP, publishes events via Outbox | 8082 | sync-db (port 5434) |
+| **RabbitMQ** | Message broker for asynchronous event-driven communication | 5672, 15672 | None |
+| **Notifications Service** | Consumes `SyncRuleCreated` events, stores notifications with idempotency | 8083 | notifications-db (port 5435) |
 
-### Why microservices now?
+### Why event-driven architecture?
 
-We started with a modular monolith (Practice 4) to understand the domain first. Now that bounded contexts are validated, we extracted Connections into its own service because it:
-- Has external dependencies (Google OAuth) with different scaling needs
-- Is called by Sync but never calls back — clear dependency direction
-- Can be evolved and deployed independently
+Event-driven communication decouples services in time and space:
+- **Temporal decoupling**: Sync Service doesn't wait for Notifications — publishes and continues
+- **Service independence**: Notifications can be down without affecting sync rule creation
+- **Extensibility**: New consumers can subscribe to `SyncRuleCreated` without changing Sync Service
+- **Reliability**: Transactional Outbox ensures no events are lost even if RabbitMQ is down
 
-The module boundaries were designed from the start so extraction required no changes to domain or application layers — only the facade implementation changed from in-process to HTTP.
+The system evolved from modular monolith (Practice 4) → microservices (Practice 5) → event-driven microservices (Practice 6). Each phase validated architectural decisions before adding complexity.
 
 See `docs/adr/` for detailed decisions: bounded context split (ADR-001), provider abstraction (ADR-002), auth & OAuth strategy (ADR-003), aggregate design & domain rules (ADR-004).
 
@@ -115,6 +136,51 @@ See `docs/adr/` for detailed decisions: bounded context split (ADR-001), provide
 ### When Gateway is Down
 
 All endpoints become unreachable from external clients. Services can still communicate internally (Sync → Connections).
+
+## Event-Driven Architecture (Practice 6)
+
+Syncify uses **RabbitMQ** for asynchronous communication with the **Transactional Outbox pattern** for guaranteed event delivery.
+
+### Architecture
+
+- **Sync Service**: Publishes events via Outbox when sync rules are created
+- **RabbitMQ**: Message broker (ports 5672, 15672) — decouples services
+- **Notifications Service**: Consumes events and stores notifications
+
+### Published Events
+
+| Event | When | Consumer |
+|---|---|---|
+| `SyncRuleCreated` | After sync rule created | Notifications Service |
+
+### Outbox Pattern
+
+Events are written to the `OutboxMessage` table in the same transaction as sync rules. A background worker publishes to RabbitMQ every 10 seconds, ensuring guaranteed delivery even if RabbitMQ is temporarily down.
+
+**Why Outbox?**
+- ✅ Atomic: Event and sync rule creation in single database transaction
+- ✅ Reliable: No lost events even if message broker is down
+- ✅ At-least-once delivery: MassTransit handles retries
+
+### Notification Model
+
+The Notifications service stores a minimal inbox projection:
+
+- **`EventId`**: Primary key and idempotency key
+- **`CorrelationId`**: Traceability across services
+- **`Payload`**: Full event serialized as JSONB
+- **`CreatedAt`**: Ingestion time for sorting and retention
+
+This keeps the schema aligned with the practice contract and avoids duplicating event data.
+
+### Failure Scenarios
+
+| Scenario | Behavior |
+|---|---|
+| RabbitMQ down | Events stay in Outbox, published when RabbitMQ recovers |
+| Notifications Service down | Events queue in RabbitMQ, consumed when service recovers |
+| Notifications DB down | Consumer retries with exponential backoff, eventually DLQ |
+| Duplicate event | Ignored via unique constraint on `EventId` (PostgreSQL error 23505) |
 
 ## Prerequisites
 
@@ -149,8 +215,11 @@ docker compose up --build
 | **Gateway** (main entry point) | http://localhost:5000 | N/A |
 | Connections Service | http://localhost:8081 | http://localhost:8081/scalar/v1 |
 | Sync Service | http://localhost:8082 | http://localhost:8082/scalar/v1 |
+| Notifications Service | http://localhost:8083/health | N/A |
+| RabbitMQ Management UI | http://localhost:15672 | guest/guest |
 | Connections DB | localhost:5433 | psql -h localhost -p 5433 -U connections -d connections |
 | Sync DB | localhost:5434 | psql -h localhost -p 5434 -U sync -d sync |
+| Notifications DB | localhost:5435 | psql -h localhost -p 5435 -U notifications -d notifications |
 
 > All endpoints expect an `X-User-ID` header (UUID) for user identification. For testing, you can use:
 > ```
@@ -313,7 +382,9 @@ docker ps
 # View logs for a specific service
 docker logs -f connections-service
 docker logs -f sync-service
+docker logs -f notifications-service
 docker logs -f gateway
+docker logs -f rabbitmq
 
 # Stop all services
 docker compose down
@@ -334,11 +405,18 @@ docker exec -it connections-db psql -U connections -d connections
 # Connect to Sync DB
 docker exec -it sync-db psql -U sync -d sync
 
+# Connect to Notifications DB
+docker exec -it notifications-db psql -U notifications -d notifications
+
 # View migration history
 # SELECT * FROM "__EFMigrationsHistory";
 
 # List all tables
 # \dt
+
+# Check notifications (for Practice 6 testing)
+# SELECT event_id, event_type, user_id, summary, created_at
+# FROM notifications ORDER BY created_at DESC LIMIT 5;
 ```
 
 ### Configuration
@@ -365,3 +443,4 @@ PRs: https://github.com/iravelmakina/syncify/pulls?q=is%3Apr+is%3Aclosed
 | 5 April | Practice 4 | Infrastructure, API endpoints, domain/application tests |
 | 7 April | Practice 4 refinement and testing | Code review fixes, migrations, Docker, README |
 | 12-14 April | Practice 5 — Microservices extraction | Gateway setup, Connections service extraction, HTTP facade implementation, Docker Compose |
+| 17-18 April | Practice 6 — Event-Driven Architecture | Transactional Outbox pattern, RabbitMQ setup, Notifications service, event consumer with idempotency |
