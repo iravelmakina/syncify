@@ -38,6 +38,18 @@ services:
     volumes:
       - sync-pgdata:/var/lib/postgresql/data
 
+  notifications-db:
+    container_name: notifications-db
+    image: postgres:17
+    environment:
+      POSTGRES_USER: notifications
+      POSTGRES_PASSWORD: notifications
+      POSTGRES_DB: notifications
+    ports:
+      - "5435:5432"
+    volumes:
+      - notifications-pgdata:/var/lib/postgresql/data
+
   connections-service:
     container_name: connections-service
     build:
@@ -74,6 +86,26 @@ services:
       - sync-db
       - connections-service
 
+  notifications-service:
+    container_name: notifications-service
+    build:
+      context: ..
+      dockerfile: build/Dockerfile.notifications
+    ports:
+      - "8083:8080"
+    environment:
+      ConnectionStrings__DefaultConnection: "Host=notifications-db;Port=5432;Database=notifications;Username=notifications;Password=notifications"
+      RabbitMQ__Host: "rabbitmq"
+      RabbitMQ__Username: "guest"
+      RabbitMQ__Password: "guest"
+      RabbitMQ__VirtualHost: "/"
+      ASPNETCORE_ENVIRONMENT: Development
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      notifications-db:
+        condition: service_started
+
   gateway:
     container_name: gateway
     build:
@@ -92,3 +124,4 @@ services:
 volumes:
   connections-pgdata:
   sync-pgdata:
+  notifications-pgdata:
