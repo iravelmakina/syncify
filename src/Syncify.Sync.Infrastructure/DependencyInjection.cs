@@ -32,6 +32,12 @@ public static class DependencyInjection
 
         services.AddMassTransit(x =>
         {
+            x.AddEntityFrameworkOutbox<SyncDbContext>(o =>
+            {
+                o.UsePostgres();
+                o.UseBusOutbox();
+            });
+
             x.UsingRabbitMq((context, cfg) =>
             {
                 var options = context.GetRequiredService<IOptions<RabbitMqOptions>>().Value;
@@ -50,6 +56,7 @@ public static class DependencyInjection
         services.AddScoped<ISyncedEventRepository, SyncedEventRepository>();
         services.AddScoped<ISyncHealthCheck, SyncHealthCheck>();
         services.AddScoped<ISyncExecutor, SyncExecutor>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         services.AddHttpContextAccessor();
 

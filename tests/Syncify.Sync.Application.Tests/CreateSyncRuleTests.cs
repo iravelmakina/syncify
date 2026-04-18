@@ -19,15 +19,17 @@ public class CreateSyncRuleTests
     private readonly Mock<IConnectionService> _connectionServiceMock = new();
     private readonly Mock<IPublishEndpoint> _publishEndpointMock = new();
     private readonly Mock<ICorrelationIdAccessor> _correlationIdAccessorMock = new();
+    private readonly Mock<IUnitOfWork> _unitOfWorkMock = new();
     private readonly CreateSyncRuleCommandHandler _handler;
 
     public CreateSyncRuleTests()
     {
         _handler = new CreateSyncRuleCommandHandler(
-            _repositoryMock.Object,
             _connectionServiceMock.Object,
             _publishEndpointMock.Object,
-            _correlationIdAccessorMock.Object);
+            _correlationIdAccessorMock.Object,
+            _unitOfWorkMock.Object,
+            _repositoryMock.Object);
     }
 
     [Fact]
@@ -63,12 +65,11 @@ public class CreateSyncRuleTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        _repositoryMock.Verify(x => x.CreateAsync(
+        _repositoryMock.Verify(x => x.Add(
             It.Is<SyncRule>(r =>
                 r.UserId == userId &&
                 r.SourceCalendarId == srcId &&
-                r.TargetCalendarId == tgtId),
-            It.IsAny<CancellationToken>()), Times.Once);
+                r.TargetCalendarId == tgtId)), Times.Once);
         _publishEndpointMock.Verify(x => x.Publish(
             It.Is<SyncRuleCreatedEvent>(e =>
                 e.CorrelationId == correlationId &&
@@ -77,6 +78,7 @@ public class CreateSyncRuleTests
                 e.Summary == $"Sync rule created: {srcId} → {tgtId}" &&
                 e.EventId != Guid.Empty),
             It.IsAny<CancellationToken>()), Times.Once);
+        _unitOfWorkMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -146,7 +148,7 @@ public class CreateSyncRuleTests
     }
 
     [Fact]
-    public async Task CreateSyncRuleUseCase_WhenPersistFails_DoesNotPublishEvent()
+    public async Task CreateSyncRuleUseCase_WhenPersistFails_PublishesEvent_BeforeSaveChangesThrows()
     {
         var userId = UserId.New();
         var srcId = Guid.NewGuid();
@@ -167,15 +169,18 @@ public class CreateSyncRuleTests
             .Setup(x => x.GetCalendarAccessAsync(tgtId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(CalendarAccess.ReadWrite);
 
-        _repositoryMock
-            .Setup(x => x.CreateAsync(It.IsAny<SyncRule>(), It.IsAny<CancellationToken>()))
+        _unitOfWorkMock
+            .Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("DB write failed."));
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             _handler.Handle(command, CancellationToken.None));
 
         _publishEndpointMock.Verify(x => x.Publish(
-            It.IsAny<SyncRuleCreatedEvent>(),
-            It.IsAny<CancellationToken>()), Times.Never);
+            It.Is<SyncRuleCreatedEvent>(e =>
+                e.UserId == userId.Value &&
+                e.SyncRuleId != Guid.Empty),
+            It.IsAny<CancellationToken>()), Times.Once);
+        _unitOfWorkMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 }

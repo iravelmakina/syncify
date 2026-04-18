@@ -32,6 +32,12 @@ internal sealed class SyncRuleRepository : ISyncRuleRepository
         await _db.SaveChangesAsync(ct);
     }
 
+    public void Add(SyncRule rule)
+    {
+        var entity = rule.ToEntity();
+        _db.SyncRules.Add(entity);
+    }
+
     public async Task UpdateAsync(SyncRule rule, CancellationToken ct = default)
     {
         var entity = await _db.SyncRules
@@ -41,7 +47,7 @@ internal sealed class SyncRuleRepository : ISyncRuleRepository
             throw new InvalidOperationException($"Sync rule {rule.Id} not found.");
 
         var updated = rule.ToEntity();
-       
+
         _db.Entry(entity).CurrentValues.SetValues(updated);
 
         await _db.SaveChangesAsync(ct);

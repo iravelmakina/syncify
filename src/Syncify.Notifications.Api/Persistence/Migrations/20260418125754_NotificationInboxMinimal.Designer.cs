@@ -5,15 +5,15 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using Syncify.Notifications.Api.Data;
+using Syncify.Notifications.Api.Persistence;
 
 #nullable disable
 
 namespace Syncify.Notifications.Api.Persistence.Migrations
 {
     [DbContext(typeof(NotificationsDbContext))]
-    [Migration("20260417212855_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260418125754_NotificationInboxMinimal")]
+    partial class NotificationInboxMinimal
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,40 +25,32 @@ namespace Syncify.Notifications.Api.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("Syncify.Notifications.Api.Data.Notification", b =>
+            modelBuilder.Entity("Syncify.Notifications.Api.Persistence.Entities.Notification", b =>
                 {
                     b.Property<Guid>("EventId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
 
                     b.Property<string>("CorrelationId")
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("correlation_id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
 
                     b.Property<string>("Payload")
                         .IsRequired()
-                        .HasColumnType("jsonb");
-
-                    b.Property<string>("Summary")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<Guid>("SyncRuleId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
+                        .HasColumnType("jsonb")
+                        .HasColumnName("payload");
 
                     b.HasKey("EventId");
 
-                    b.HasIndex("CorrelationId");
+                    b.HasIndex("CorrelationId")
+                        .HasDatabaseName("ix_notifications_correlation_id");
 
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Notifications");
+                    b.ToTable("notifications", (string)null);
                 });
 #pragma warning restore 612, 618
         }
