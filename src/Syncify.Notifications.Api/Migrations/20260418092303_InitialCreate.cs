@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace Syncify.Notifications.Api.Persistence.Migrations
+namespace Syncify.Notifications.Api.Migrations
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration
@@ -16,12 +16,14 @@ namespace Syncify.Notifications.Api.Persistence.Migrations
                 columns: table => new
                 {
                     EventId = table.Column<Guid>(type: "uuid", nullable: false),
+                    EventType = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     CorrelationId = table.Column<string>(type: "text", nullable: true),
-                    SyncRuleId = table.Column<Guid>(type: "uuid", nullable: false),
                     UserId = table.Column<Guid>(type: "uuid", nullable: false),
                     Summary = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     Payload = table.Column<string>(type: "jsonb", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    OccurredAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    IsRead = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -34,9 +36,24 @@ namespace Syncify.Notifications.Api.Persistence.Migrations
                 column: "CorrelationId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Notifications_EventType",
+                table: "Notifications",
+                column: "EventType");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Notifications_OccurredAt",
+                table: "Notifications",
+                column: "OccurredAt");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Notifications_UserId",
                 table: "Notifications",
                 column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Notifications_UserId_IsRead",
+                table: "Notifications",
+                columns: new[] { "UserId", "IsRead" });
         }
 
         /// <inheritdoc />

@@ -9,10 +9,10 @@ using Syncify.Notifications.Api.Data;
 
 #nullable disable
 
-namespace Syncify.Notifications.Api.Persistence.Migrations
+namespace Syncify.Notifications.Api.Migrations
 {
     [DbContext(typeof(NotificationsDbContext))]
-    [Migration("20260417212855_InitialCreate")]
+    [Migration("20260418092303_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -37,6 +37,17 @@ namespace Syncify.Notifications.Api.Persistence.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("OccurredAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Payload")
                         .IsRequired()
                         .HasColumnType("jsonb");
@@ -46,9 +57,6 @@ namespace Syncify.Notifications.Api.Persistence.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
-                    b.Property<Guid>("SyncRuleId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
@@ -56,7 +64,13 @@ namespace Syncify.Notifications.Api.Persistence.Migrations
 
                     b.HasIndex("CorrelationId");
 
+                    b.HasIndex("EventType");
+
+                    b.HasIndex("OccurredAt");
+
                     b.HasIndex("UserId");
+
+                    b.HasIndex("UserId", "IsRead");
 
                     b.ToTable("Notifications");
                 });
