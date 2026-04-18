@@ -19,8 +19,8 @@ public sealed class CreateSyncRuleCommandHandler(
 {
     public async Task<Result<Guid>> Handle(CreateSyncRuleCommand command, CancellationToken ct)
     {
-        var srcAccess = await connectionService.GetCalendarAccessAsync(command.SourceCalendarId, ct);
-        var tgtAccess = await connectionService.GetCalendarAccessAsync(command.TargetCalendarId, ct);
+        var srcAccess = await connectionService.GetCalendarAccessAsync(command.SourceCalendarId, command.UserId, ct);
+        var tgtAccess = await connectionService.GetCalendarAccessAsync(command.TargetCalendarId, command.UserId, ct);
 
         var rule = SyncRule.Create(
             command.UserId,

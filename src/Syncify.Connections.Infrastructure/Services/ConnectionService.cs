@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Syncify.Connections.Application.Ports;
 using Syncify.Connections.Infrastructure.Persistence;
+using Syncify.Shared;
 using Syncify.Shared.Enums;
 using Syncify.Shared.Ports;
 
@@ -19,7 +20,7 @@ internal sealed class ConnectionService : IConnectionService
         _oauthProvider = oauthProvider;
     }
 
-    public async Task<CalendarAccess> GetCalendarAccessAsync(Guid calendarId, CancellationToken ct = default)
+    public async Task<CalendarAccess> GetCalendarAccessAsync(Guid calendarId, UserId? userId = null, CancellationToken ct = default)
     {
         var calendar = await _db.Calendars
             .AsNoTracking()
@@ -29,7 +30,7 @@ internal sealed class ConnectionService : IConnectionService
         return Enum.Parse<CalendarAccess>(calendar.Access, ignoreCase: true);
     }
 
-    public async Task<ProviderCalendarAccessToken> GetProviderCalendarAccessTokenAsync(Guid calendarId, CancellationToken ct = default)
+    public async Task<ProviderCalendarAccessToken> GetProviderCalendarAccessTokenAsync(Guid calendarId, UserId? userId = null, CancellationToken ct = default)
     {
         var calendar = await _db.Calendars
             .AsNoTracking()
