@@ -17,7 +17,7 @@ public sealed class UpdateTitleCommandHandler(
         if (rule is null)
             return Result<Unit>.Failure(new ApplicationError.NotFound("SyncRule", request.RuleId));
 
-        var srcAccess = await connectionService.GetCalendarAccessAsync(rule.SourceCalendarId, ct);
+        var srcAccess = await connectionService.GetCalendarAccessAsync(rule.SourceCalendarId, rule.UserId, ct);
 
         rule.UpdateTitle(request.CopyTitle, request.CustomTitle, srcAccess, DateTime.UtcNow);
         await repository.UpdateAsync(rule, ct);

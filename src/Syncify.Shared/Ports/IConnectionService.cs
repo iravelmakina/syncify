@@ -6,6 +6,6 @@ public sealed record ProviderCalendarAccessToken(string AccessToken, string Prov
 
 public interface IConnectionService
 {
-    Task<CalendarAccess> GetCalendarAccessAsync(Guid calendarId, CancellationToken ct = default);
-    Task<ProviderCalendarAccessToken> GetProviderCalendarAccessTokenAsync(Guid calendarId, CancellationToken ct = default);
+    Task<CalendarAccess> GetCalendarAccessAsync(Guid calendarId, UserId? userId = null, CancellationToken ct = default);
+    Task<ProviderCalendarAccessToken> GetProviderCalendarAccessTokenAsync(Guid calendarId, UserId? userId = null, CancellationToken ct = default);
 }
