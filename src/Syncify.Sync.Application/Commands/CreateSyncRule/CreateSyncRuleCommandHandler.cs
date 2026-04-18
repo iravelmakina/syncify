@@ -10,10 +10,11 @@ using Syncify.Sync.Domain.Aggregates;
 namespace Syncify.Sync.Application.Commands.CreateSyncRule;
 
 public sealed class CreateSyncRuleCommandHandler(
-    ISyncRuleRepository repository,
     IConnectionService connectionService,
     IPublishEndpoint publishEndpoint,
-    ICorrelationIdAccessor correlationIdAccessor)
+    ICorrelationIdAccessor correlationIdAccessor,
+    IUnitOfWork unitOfWork,
+    ISyncRuleRepository repository)
     : IRequestHandler<CreateSyncRuleCommand, Result<Guid>>
 {
     public async Task<Result<Guid>> Handle(CreateSyncRuleCommand command, CancellationToken ct)
@@ -33,7 +34,7 @@ public sealed class CreateSyncRuleCommandHandler(
             command.LookbackDays,
             DateTime.UtcNow);
 
-        await repository.CreateAsync(rule, ct);
+        repository.Add(rule);  // Add to DbContext without saving
 
         await publishEndpoint.Publish(new SyncRuleCreatedEvent
         {
@@ -44,6 +45,8 @@ public sealed class CreateSyncRuleCommandHandler(
             UserId = command.UserId.Value,
             Summary = $"Sync rule created: {command.SourceCalendarId} → {command.TargetCalendarId}"
         }, ct);
+
+        await unitOfWork.SaveChangesAsync(ct);  // Single transaction: entity + outbox event
 
         return Result<Guid>.Success(rule.Id);
     }
