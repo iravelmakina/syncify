@@ -164,12 +164,14 @@ Events are written to the `OutboxMessage` table in the same transaction as sync 
 
 ### Notification Model
 
-The Notifications service uses an extensible model that supports multiple event types without schema changes:
+The Notifications service stores a minimal inbox projection:
 
-- **`EventType`**: Discriminator for filtering by event type (e.g., "SyncRuleCreated")
-- **`Payload`**: Full event serialized as JSONB for debugging and auditing
-- **`IsRead`**: Future notification UI support
-- **Idempotency**: `EventId` as primary key prevents duplicate notifications
+- **`EventId`**: Primary key and idempotency key
+- **`CorrelationId`**: Traceability across services
+- **`Payload`**: Full event serialized as JSONB
+- **`CreatedAt`**: Ingestion time for sorting and retention
+
+This keeps the schema aligned with the practice contract and avoids duplicating event data.
 
 ### Failure Scenarios
 
