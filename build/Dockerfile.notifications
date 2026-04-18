@@ -1,0 +1,19 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+COPY syncify.sln ./
+COPY src/Syncify.Notifications.Api/Syncify.Notifications.Api.csproj src/Syncify.Notifications.Api/
+COPY src/Syncify.Shared/Syncify.Shared.csproj src/Syncify.Shared/
+
+RUN dotnet restore src/Syncify.Notifications.Api
+
+COPY src/Syncify.Notifications.Api/ src/Syncify.Notifications.Api/
+COPY src/Syncify.Shared/ src/Syncify.Shared/
+
+RUN dotnet publish src/Syncify.Notifications.Api -c Release -o /app --no-restore
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
+WORKDIR /app
+COPY --from=build /app .
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "Syncify.Notifications.Api.dll"]

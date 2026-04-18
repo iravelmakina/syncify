@@ -56,6 +56,7 @@ public static class DependencyInjection
         services.AddScoped<ISyncedEventRepository, SyncedEventRepository>();
         services.AddScoped<ISyncHealthCheck, SyncHealthCheck>();
         services.AddScoped<ISyncExecutor, SyncExecutor>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         services.AddHttpContextAccessor();
 

@@ -25,6 +25,11 @@ services:
       - "5433:5432"
     volumes:
       - connections-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U connections -d connections"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   sync-db:
     container_name: sync-db
@@ -37,6 +42,40 @@ services:
       - "5434:5432"
     volumes:
       - sync-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sync -d sync"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  notifications-db:
+    container_name: notifications-db
+    image: postgres:17
+    environment:
+      POSTGRES_USER: notifications
+      POSTGRES_PASSWORD: notifications
+      POSTGRES_DB: notifications
+    ports:
+      - "5435:5432"
+    volumes:
+      - notifications-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U notifications -d notifications"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  notifications-db:
+    container_name: notifications-db
+    image: postgres:17
+    environment:
+      POSTGRES_USER: notifications
+      POSTGRES_PASSWORD: notifications
+      POSTGRES_DB: notifications
+    ports:
+      - "5435:5432"
+    volumes:
+      - notifications-pgdata:/var/lib/postgresql/data
 
   connections-service:
     container_name: connections-service
@@ -52,7 +91,8 @@ services:
       Google__ClientId: "${GOOGLE_CLIENT_ID}"
       Google__ClientSecret: "${GOOGLE_CLIENT_SECRET}"
     depends_on:
-      - connections-db
+      connections-db:
+        condition: service_healthy
 
   sync-service:
     container_name: sync-service
@@ -70,9 +110,52 @@ services:
       RabbitMQ__VirtualHost: "/"
       ASPNETCORE_ENVIRONMENT: Development
     depends_on:
-      - rabbitmq
-      - sync-db
-      - connections-service
+      rabbitmq:
+        condition: service_healthy
+      sync-db:
+        condition: service_healthy
+      connections-service:
+        condition: service_started
+
+  notifications-service:
+    container_name: notifications-service
+    build:
+      context: ..
+      dockerfile: build/Dockerfile.notifications
+    ports:
+      - "8083:8080"
+    environment:
+      ConnectionStrings__DefaultConnection: "Host=notifications-db;Port=5432;Database=notifications;Username=notifications;Password=notifications"
+      RabbitMQ__Host: "rabbitmq"
+      RabbitMQ__Username: "guest"
+      RabbitMQ__Password: "guest"
+      RabbitMQ__VirtualHost: "/"
+      ASPNETCORE_ENVIRONMENT: Development
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      notifications-db:
+        condition: service_started
+
+  notifications-service:
+    container_name: notifications-service
+    build:
+      context: ..
+      dockerfile: build/Dockerfile.notifications
+    ports:
+      - "8083:8080"
+    environment:
+      ConnectionStrings__DefaultConnection: "Host=notifications-db;Port=5432;Database=notifications;Username=notifications;Password=notifications"
+      RabbitMQ__Host: "rabbitmq"
+      RabbitMQ__Username: "guest"
+      RabbitMQ__Password: "guest"
+      RabbitMQ__VirtualHost: "/"
+      ASPNETCORE_ENVIRONMENT: Development
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      notifications-db:
+        condition: service_started
 
   gateway:
     container_name: gateway
@@ -80,15 +163,18 @@ services:
       context: ..
       dockerfile: build/Dockerfile.gateway
     ports:
-      - "5000:8080"
+      - "5001:8080"
     environment:
       ReverseProxy__Clusters__connections__Destinations__default__Address: "http://connections-service:8080"
       ReverseProxy__Clusters__sync__Destinations__default__Address: "http://sync-service:8080"
       ASPNETCORE_ENVIRONMENT: Development
     depends_on:
-      - connections-service
-      - sync-service
+      connections-service:
+        condition: service_started
+      sync-service:
+        condition: service_started
 
 volumes:
   connections-pgdata:
   sync-pgdata:
+  notifications-pgdata:
