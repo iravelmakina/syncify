@@ -25,6 +25,11 @@ services:
       - "5433:5432"
     volumes:
       - connections-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U connections -d connections"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   sync-db:
     container_name: sync-db
@@ -37,6 +42,11 @@ services:
       - "5434:5432"
     volumes:
       - sync-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sync -d sync"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   notifications-db:
     container_name: notifications-db
@@ -49,6 +59,11 @@ services:
       - "5435:5432"
     volumes:
       - notifications-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U notifications -d notifications"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   connections-service:
     container_name: connections-service
@@ -64,7 +79,8 @@ services:
       Google__ClientId: "${GOOGLE_CLIENT_ID}"
       Google__ClientSecret: "${GOOGLE_CLIENT_SECRET}"
     depends_on:
-      - connections-db
+      connections-db:
+        condition: service_healthy
 
   sync-service:
     container_name: sync-service
@@ -82,9 +98,12 @@ services:
       RabbitMQ__VirtualHost: "/"
       ASPNETCORE_ENVIRONMENT: Development
     depends_on:
-      - rabbitmq
-      - sync-db
-      - connections-service
+      rabbitmq:
+        condition: service_healthy
+      sync-db:
+        condition: service_healthy
+      connections-service:
+        condition: service_started
 
   notifications-service:
     container_name: notifications-service
@@ -112,14 +131,16 @@ services:
       context: ..
       dockerfile: build/Dockerfile.gateway
     ports:
-      - "5000:8080"
+      - "5001:8080"
     environment:
       ReverseProxy__Clusters__connections__Destinations__default__Address: "http://connections-service:8080"
       ReverseProxy__Clusters__sync__Destinations__default__Address: "http://sync-service:8080"
       ASPNETCORE_ENVIRONMENT: Development
     depends_on:
-      - connections-service
-      - sync-service
+      connections-service:
+        condition: service_started
+      sync-service:
+        condition: service_started
 
 volumes:
   connections-pgdata:
