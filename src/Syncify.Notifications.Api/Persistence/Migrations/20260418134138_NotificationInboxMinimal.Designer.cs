@@ -12,7 +12,7 @@ using Syncify.Notifications.Api.Persistence;
 namespace Syncify.Notifications.Api.Persistence.Migrations
 {
     [DbContext(typeof(NotificationsDbContext))]
-    [Migration("20260418125754_NotificationInboxMinimal")]
+    [Migration("20260418134138_NotificationInboxMinimal")]
     partial class NotificationInboxMinimal
     {
         /// <inheritdoc />

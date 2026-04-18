@@ -31,7 +31,7 @@ public sealed class SyncExecutor(
 
         try
         {
-            var target = await connectionService.GetProviderCalendarAccessTokenAsync(rule.TargetCalendarId, ct);
+            var target = await connectionService.GetProviderCalendarAccessTokenAsync(rule.TargetCalendarId, rule.UserId, ct);
 
             if (rule.SyncCursor is null)
             {
@@ -44,7 +44,7 @@ public sealed class SyncExecutor(
                 return Result<Unit>.Success(Unit.Value);
             }
 
-            var source = await connectionService.GetProviderCalendarAccessTokenAsync(rule.SourceCalendarId, ct);
+            var source = await connectionService.GetProviderCalendarAccessTokenAsync(rule.SourceCalendarId, rule.UserId, ct);
 
             var result = await calendarSyncer.FetchChangesAsync(
                 source.ProviderCalendarId, source.AccessToken, rule.SyncCursor, rule.LookbackDays, ct);

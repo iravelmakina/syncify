@@ -24,7 +24,7 @@ namespace Syncify.Notifications.Api.Persistence.Migrations
                 table: "notifications");
 
             migrationBuilder.DropIndex(
-                name: "ix_notifications_user_id_status",
+                name: "ix_notifications_user_id_is_read",
                 table: "notifications");
 
             migrationBuilder.DropColumn(
@@ -32,11 +32,15 @@ namespace Syncify.Notifications.Api.Persistence.Migrations
                 table: "notifications");
 
             migrationBuilder.DropColumn(
+                name: "is_read",
+                table: "notifications");
+
+            migrationBuilder.DropColumn(
                 name: "occurred_at",
                 table: "notifications");
 
             migrationBuilder.DropColumn(
-                name: "status",
+                name: "summary",
                 table: "notifications");
 
             migrationBuilder.DropColumn(
@@ -55,6 +59,13 @@ namespace Syncify.Notifications.Api.Persistence.Migrations
                 nullable: false,
                 defaultValue: "");
 
+            migrationBuilder.AddColumn<bool>(
+                name: "is_read",
+                table: "notifications",
+                type: "boolean",
+                nullable: false,
+                defaultValue: false);
+
             migrationBuilder.AddColumn<DateTime>(
                 name: "occurred_at",
                 table: "notifications",
@@ -63,10 +74,10 @@ namespace Syncify.Notifications.Api.Persistence.Migrations
                 defaultValue: new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified));
 
             migrationBuilder.AddColumn<string>(
-                name: "status",
+                name: "summary",
                 table: "notifications",
-                type: "character varying(20)",
-                maxLength: 20,
+                type: "character varying(500)",
+                maxLength: 500,
                 nullable: false,
                 defaultValue: "");
 
@@ -93,9 +104,9 @@ namespace Syncify.Notifications.Api.Persistence.Migrations
                 column: "user_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_notifications_user_id_status",
+                name: "ix_notifications_user_id_is_read",
                 table: "notifications",
-                columns: new[] { "user_id", "status" });
+                columns: new[] { "user_id", "is_read" });
         }
     }
 }

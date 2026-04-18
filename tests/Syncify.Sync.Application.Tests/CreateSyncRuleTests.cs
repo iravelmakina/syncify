@@ -49,11 +49,11 @@ public class CreateSyncRuleTests
             new FilterPolicy([]));
 
         _connectionServiceMock
-            .Setup(x => x.GetCalendarAccessAsync(srcId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetCalendarAccessAsync(srcId, It.IsAny<UserId?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(CalendarAccess.Read);
         
         _connectionServiceMock
-            .Setup(x => x.GetCalendarAccessAsync(tgtId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetCalendarAccessAsync(tgtId, It.IsAny<UserId?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(CalendarAccess.ReadWrite);
 
         _correlationIdAccessorMock
@@ -96,11 +96,11 @@ public class CreateSyncRuleTests
             new FilterPolicy([]));
 
         _connectionServiceMock
-            .Setup(x => x.GetCalendarAccessAsync(srcId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetCalendarAccessAsync(srcId, It.IsAny<UserId?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(CalendarAccess.Read);
 
         _connectionServiceMock
-            .Setup(x => x.GetCalendarAccessAsync(tgtId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetCalendarAccessAsync(tgtId, It.IsAny<UserId?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(CalendarAccess.ReadWrite);
 
         _correlationIdAccessorMock
@@ -130,11 +130,11 @@ public class CreateSyncRuleTests
             new FilterPolicy([]));
 
         _connectionServiceMock
-            .Setup(x => x.GetCalendarAccessAsync(srcId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetCalendarAccessAsync(srcId, It.IsAny<UserId?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(CalendarAccess.Read);
         
         _connectionServiceMock
-            .Setup(x => x.GetCalendarAccessAsync(tgtId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetCalendarAccessAsync(tgtId, It.IsAny<UserId?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(CalendarAccess.Read); // Not ReadWrite
 
         // Act & Assert
@@ -162,11 +162,11 @@ public class CreateSyncRuleTests
             new FilterPolicy([]));
 
         _connectionServiceMock
-            .Setup(x => x.GetCalendarAccessAsync(srcId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetCalendarAccessAsync(srcId, It.IsAny<UserId?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(CalendarAccess.Read);
 
         _connectionServiceMock
-            .Setup(x => x.GetCalendarAccessAsync(tgtId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetCalendarAccessAsync(tgtId, It.IsAny<UserId?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(CalendarAccess.ReadWrite);
 
         _unitOfWorkMock
